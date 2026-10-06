@@ -1,0 +1,23 @@
+{
+  "name": "soa-minggu6",
+  "version": "1.0.0",
+  "description": "Starter Praktikum Minggu 6 - 3rd Party API Axios",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "db:migrate": "node scripts/migrate.js"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "joi": "^17.13.3",
+    "axios": "^1.7.9",
+    "mysql2": "^3.24.4",
+    "sequelize": "^6.37.8"
+  }
+}
