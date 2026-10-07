@@ -1,0 +1,16 @@
+# Use this workspace to collaborate
+workspace:
+  id: 9c3e738b-8908-46e4-8e28-fbb90125a858
+
+localResources:
+  collections:
+    - ../SOA Minggu 6 - 3rd Party API Axios
+  environments:
+    - ../local.postman_environment.json
+    - ../local.environment.yaml
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../SOA Minggu 6 - 3rd Party API Axios: e273d704-5141-43fa-810f-2517bd6f8dea

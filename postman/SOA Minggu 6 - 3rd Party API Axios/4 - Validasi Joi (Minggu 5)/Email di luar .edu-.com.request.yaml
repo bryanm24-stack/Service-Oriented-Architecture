@@ -1,0 +1,24 @@
+$kind: http-request
+name: Email di luar .edu/.com
+description: Domain .ac.id ditolak — aturan tlds di Joi.email().
+url: "{{baseUrl}}/contoh/validasi"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "pengguna_username": "jotaro",
+      "pengguna_email": "jotaro@kampus.ac.id",
+      "pengguna_password": "Kujo1234!",
+      "pengguna_konfirmasi_password": "Kujo1234!",
+      "pengguna_birthday": "1990-05-10"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400', () => pm.response.to.have.status(400));
+      pm.test('pesan email domain', () => pm.expect(pm.response.json().errors.pengguna_email[0]).to.include('.edu atau .com'));
+    language: text/javascript
+order: 6000

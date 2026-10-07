@@ -1,0 +1,24 @@
+$kind: http-request
+description: "Aturan LINTAS field (.with): app_name dikirim tanpa app_token -> 400. Tidak ada aturan per-field yang bisa menyatakan ini."
+url: "{{baseUrl}}/contoh/validasi"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "pengguna_username": "jotaro",
+      "pengguna_email": "jotaro@istts.edu",
+      "pengguna_password": "Kujo1234!",
+      "pengguna_konfirmasi_password": "Kujo1234!",
+      "pengguna_birthday": "1990-05-10",
+      "app_name": "aplikasiA"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400', () => pm.response.to.have.status(400));
+      pm.test('pesan object.with', () => pm.expect(pm.response.json().errors.app_name[0]).to.include('dikirim bersama dengan'));
+    language: text/javascript
+order: 5000

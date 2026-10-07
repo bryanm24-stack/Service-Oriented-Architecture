@@ -1,0 +1,3 @@
+$kind: collection
+description: "Demo POST /api/v1/contoh/validasi dengan userSchema — semua fitur Joi: label & pesan Indonesia, pattern, Joi.ref, default, dan aturan lintas-field (.with). Error selalu dilaporkan SEMUA sekaligus, dikelompokkan per field."
+order: 5000
