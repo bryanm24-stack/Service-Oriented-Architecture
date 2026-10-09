@@ -1,6 +1,78 @@
--- DATA AWAL GABUNGAN. Hanya tambah record yang belum ada.
--- Tidak ada DROP, TRUNCATE, DELETE, REPLACE, atau UPDATE.
--- Jalankan melalui npm run db:migrate.
+-- DATABASE GABUNGAN
+-- Sumber: schema.sql + seed.sql (sudah mencakup isi versi materi).
+-- Jalankan pada database yang sama dengan DB_NAME di .env.
+-- Pilih database tersebut sebelum mengimpor file ini.
+-- Tabel yang sudah ada dan data lama tidak dihapus atau ditimpa.
+
+-- ============================================================
+-- 1. STRUKTUR TABEL
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS buku (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  judul         VARCHAR(150) NOT NULL,
+  penulis       VARCHAR(100) NOT NULL,
+  tahun_terbit  SMALLINT UNSIGNED NOT NULL,
+  harga         INT UNSIGNED NOT NULL,
+  stok          INT UNSIGNED NOT NULL DEFAULT 0,
+  kategori      ENUM('novel', 'komik', 'non-fiksi', 'referensi') NOT NULL,
+
+  createdAt     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                ON UPDATE CURRENT_TIMESTAMP,
+  deletedAt     DATETIME NULL DEFAULT NULL,
+
+  UNIQUE KEY uq_buku_judul (judul)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS karakter (
+  id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  buku_id   INT UNSIGNED NOT NULL,
+  nama      VARCHAR(100) NOT NULL,
+  peran     VARCHAR(50) NOT NULL,
+
+  CONSTRAINT fk_karakter_buku
+    FOREIGN KEY (buku_id) REFERENCES buku(id)
+    ON DELETE CASCADE,
+
+  INDEX idx_karakter_buku_id (buku_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS penulis (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama          VARCHAR(100) NOT NULL,
+  negara        VARCHAR(100) NOT NULL,
+  tahun_lahir   SMALLINT UNSIGNED NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deletedAt DATETIME NULL DEFAULT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS categories (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(100) NOT NULL,
+
+    icon VARCHAR(255) NULL,
+
+    createdAt DATETIME NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    updatedAt DATETIME NOT NULL
+        DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- 2. DATA AWAL
+-- ============================================================
 
 INSERT INTO buku (judul, penulis, tahun_terbit, harga, stok, kategori)
 SELECT 'Jojo''s Bizarre Adventure', 'Hirohiko Araki', 1987, 120000, 8, 'komik'
