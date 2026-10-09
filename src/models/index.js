@@ -28,9 +28,14 @@ const { sequelize } = require("../databases/connection");
 
 const Buku = require("./Buku");
 const Karakter = require("./Karakter");
+const Category = require("./Category");
+const User = require("./User");
 
 db.Buku = Buku(sequelize, sequelize.Sequelize);
 db.Karakter = Karakter(sequelize, sequelize.Sequelize);
+db.Category = Category(sequelize, sequelize.Sequelize);
+// User.js sudah mengekspor model yang diinisialisasi.
+db.User = User;
 
 // Relasi dinyatakan SETELAH semua model ada. Urutan di objek `db`
 // tidak penting; yang penting semua sudah terdaftar di baris atas.

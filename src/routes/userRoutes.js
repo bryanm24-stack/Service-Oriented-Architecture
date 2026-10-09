@@ -8,7 +8,7 @@ const methodNotAllowed = require('../middlewares/methodNotAllowed');
 router.route('/')
     .get(userController.getAllUsers)
     .post(userController.createUser)
-    .all(methodNotAllowed);
+    .all(methodNotAllowed("GET", "POST"));
 
 // Routes untuk resource spesifik (dengan ID)
 router.route('/:id')
@@ -16,6 +16,6 @@ router.route('/:id')
     .put(userController.updateUser)
     .patch(userController.patchUser) // Endpoint PATCH didaftarkan di sini
     .delete(userController.deleteUser)
-    .all(methodNotAllowed);
+    .all(methodNotAllowed("GET", "PUT", "PATCH", "DELETE"));
 
 module.exports = router;

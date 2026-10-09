@@ -1,0 +1,7 @@
+$kind: http-request
+url: http://localhost:3001/api/v1/categories
+method: GET
+body:
+  type: json
+  content: ""
+order: 4066565621828678
