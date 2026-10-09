@@ -47,3 +47,45 @@ for (const key of Object.keys(db)) {
 
 db.sequelize = sequelize;
 module.exports = db;
+
+
+
+
+//index.js(transaction, user, category)(Dana)
+
+const sequelize = require('../config/database');
+
+const User = require('./User');
+const Category = require('./Category');
+const Transaction = require('./Transaction');
+
+// Transaction -> Category
+Transaction.belongsTo(Category, {
+    foreignKey: 'id_category',
+    as: 'category'
+});
+
+// Transaction -> User
+Transaction.belongsTo(User, {
+    foreignKey: 'id_user',
+    as: 'user'
+});
+
+// Category -> Transaction
+Category.hasMany(Transaction, {
+    foreignKey: 'id_category',
+    as: 'transactions'
+});
+
+// User -> Transaction
+User.hasMany(Transaction, {
+    foreignKey: 'id_user',
+    as: 'transactions'
+});
+
+module.exports = {
+    sequelize,
+    User,
+    Category,
+    Transaction
+};
