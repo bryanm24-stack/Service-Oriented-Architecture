@@ -1,5 +1,3 @@
--- SKEMA GABUNGAN: database dipilih oleh scripts/migrate.js dari DB_NAME.
-
 -- ============================================================
 -- SKEMA DATABASE — SOA MINGGU 6
 -- ============================================================
@@ -63,30 +61,4 @@ CREATE TABLE IF NOT EXISTS penulis (
   nama          VARCHAR(100) NOT NULL,
   negara        VARCHAR(100) NOT NULL,
   tahun_lahir   SMALLINT UNSIGNED NOT NULL
-) ENGINE=InnoDB;
-
-
-CREATE TABLE IF NOT EXISTS users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  deletedAt DATETIME NULL DEFAULT NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS categories (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    name VARCHAR(100) NOT NULL,
-
-    icon VARCHAR(255) NULL,
-
-    createdAt DATETIME NOT NULL
-        DEFAULT CURRENT_TIMESTAMP,
-
-    updatedAt DATETIME NOT NULL
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;

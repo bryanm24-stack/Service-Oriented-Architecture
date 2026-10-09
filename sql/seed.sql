@@ -1,42 +1,90 @@
--- ============================================================
--- DATA AWAL — SOA MINGGU 6
--- ============================================================
---
--- Data ini SAMA PERSIS dengan Minggu 3 — sengaja, supaya response
--- GET /api/v1/buku bisa dibandingkan baris demi baris antara versi
--- raw query dan versi ORM: harusnya identik.
---
--- File ini idempotent: setiap kali dijalankan, tabel dikosongkan lalu
--- diisi ulang. `npm run db:migrate` adalah tombol reset kalian.
+-- DATA AWAL GABUNGAN. Hanya tambah record yang belum ada.
+-- Tidak ada DROP, TRUNCATE, DELETE, REPLACE, atau UPDATE.
+-- Jalankan melalui npm run db:migrate.
 
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE karakter;
-TRUNCATE TABLE buku;
-TRUNCATE TABLE penulis;
-SET FOREIGN_KEY_CHECKS = 1;
+INSERT INTO buku (judul, penulis, tahun_terbit, harga, stok, kategori)
+SELECT 'Jojo''s Bizarre Adventure', 'Hirohiko Araki', 1987, 120000, 8, 'komik'
+WHERE NOT EXISTS (SELECT 1 FROM buku WHERE judul = 'Jojo''s Bizarre Adventure');
 
--- createdAt/updatedAt tidak ditulis eksplisit — kolomnya punya
--- DEFAULT CURRENT_TIMESTAMP, dan (mirip Sequelize nanti) isi timestamp
--- bukan urusan data seed, itu urusan mekanisme.
-INSERT INTO buku (id, judul, penulis, tahun_terbit, harga, stok, kategori) VALUES
-  (1, 'Jojo''s Bizarre Adventure', 'Hirohiko Araki', 1987, 120000, 8, 'komik'),
-  (2, 'Harry Potter and the Philosopher''s Stone', 'J.K. Rowling', 1997, 95000, 15, 'novel'),
-  (3, 'Laskar Pelangi', 'Andrea Hirata', 2005, 78000, 0, 'novel'),
-  (4, 'Bumi Manusia', 'Pramoedya Ananta Toer', 1980, 110000, 4, 'novel'),
-  (5, 'Filosofi Teras', 'Henry Manampiring', 2018, 88000, 22, 'non-fiksi');
+INSERT INTO buku (judul, penulis, tahun_terbit, harga, stok, kategori)
+SELECT 'Harry Potter and the Philosopher''s Stone', 'J.K. Rowling', 1997, 95000, 15, 'novel'
+WHERE NOT EXISTS (SELECT 1 FROM buku WHERE judul = 'Harry Potter and the Philosopher''s Stone');
 
-INSERT INTO karakter (buku_id, nama, peran) VALUES
-  (1, 'Jotaro Kujo', 'protagonis'),
-  (1, 'Dio Brando', 'antagonis'),
-  (1, 'Giorno Giovanna', 'protagonis'),
-  (2, 'Harry Potter', 'protagonis'),
-  (2, 'Hermione Granger', 'protagonis'),
-  (3, 'Ikal', 'protagonis'),
-  (4, 'Minke', 'protagonis');
-  -- Buku 5 (Filosofi Teras) sengaja tanpa karakter, sama seperti Minggu 2-3.
+INSERT INTO buku (judul, penulis, tahun_terbit, harga, stok, kategori)
+SELECT 'Laskar Pelangi', 'Andrea Hirata', 2005, 78000, 0, 'novel'
+WHERE NOT EXISTS (SELECT 1 FROM buku WHERE judul = 'Laskar Pelangi');
 
-INSERT INTO penulis (id, nama, negara, tahun_lahir) VALUES
-  (1, 'Hirohiko Araki', 'Jepang', 1960),
-  (2, 'J.K. Rowling', 'Inggris', 1965),
-  (3, 'Andrea Hirata', 'Indonesia', 1967),
-  (4, 'Pramoedya Ananta Toer', 'Indonesia', 1925);
+INSERT INTO buku (judul, penulis, tahun_terbit, harga, stok, kategori)
+SELECT 'Bumi Manusia', 'Pramoedya Ananta Toer', 1980, 110000, 4, 'novel'
+WHERE NOT EXISTS (SELECT 1 FROM buku WHERE judul = 'Bumi Manusia');
+
+INSERT INTO buku (judul, penulis, tahun_terbit, harga, stok, kategori)
+SELECT 'Filosofi Teras', 'Henry Manampiring', 2018, 88000, 22, 'non-fiksi'
+WHERE NOT EXISTS (SELECT 1 FROM buku WHERE judul = 'Filosofi Teras');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Jotaro Kujo', 'protagonis' FROM buku AS b
+WHERE b.judul = 'Jojo''s Bizarre Adventure'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Jotaro Kujo' AND k.peran = 'protagonis');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Dio Brando', 'antagonis' FROM buku AS b
+WHERE b.judul = 'Jojo''s Bizarre Adventure'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Dio Brando' AND k.peran = 'antagonis');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Giorno Giovanna', 'protagonis' FROM buku AS b
+WHERE b.judul = 'Jojo''s Bizarre Adventure'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Giorno Giovanna' AND k.peran = 'protagonis');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Harry Potter', 'protagonis' FROM buku AS b
+WHERE b.judul = 'Harry Potter and the Philosopher''s Stone'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Harry Potter' AND k.peran = 'protagonis');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Hermione Granger', 'protagonis' FROM buku AS b
+WHERE b.judul = 'Harry Potter and the Philosopher''s Stone'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Hermione Granger' AND k.peran = 'protagonis');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Ikal', 'protagonis' FROM buku AS b
+WHERE b.judul = 'Laskar Pelangi'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Ikal' AND k.peran = 'protagonis');
+
+INSERT INTO karakter (buku_id, nama, peran)
+SELECT b.id, 'Minke', 'protagonis' FROM buku AS b
+WHERE b.judul = 'Bumi Manusia'
+AND NOT EXISTS (SELECT 1 FROM karakter AS k WHERE k.buku_id = b.id AND k.nama = 'Minke' AND k.peran = 'protagonis');
+
+INSERT INTO penulis (nama, negara, tahun_lahir)
+SELECT 'Hirohiko Araki', 'Jepang', 1960
+WHERE NOT EXISTS (SELECT 1 FROM penulis WHERE nama = 'Hirohiko Araki');
+
+INSERT INTO penulis (nama, negara, tahun_lahir)
+SELECT 'J.K. Rowling', 'Inggris', 1965
+WHERE NOT EXISTS (SELECT 1 FROM penulis WHERE nama = 'J.K. Rowling');
+
+INSERT INTO penulis (nama, negara, tahun_lahir)
+SELECT 'Andrea Hirata', 'Indonesia', 1967
+WHERE NOT EXISTS (SELECT 1 FROM penulis WHERE nama = 'Andrea Hirata');
+
+INSERT INTO penulis (nama, negara, tahun_lahir)
+SELECT 'Pramoedya Ananta Toer', 'Indonesia', 1925
+WHERE NOT EXISTS (SELECT 1 FROM penulis WHERE nama = 'Pramoedya Ananta Toer');
+
+INSERT INTO users (name, email, password)
+SELECT 'Kenneth', 'kenneth@istts.edu', 'Password123!'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'kenneth@istts.edu');
+
+INSERT INTO categories (name, icon)
+SELECT 'Makanan', 'food'
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Makanan');
+
+INSERT INTO categories (name, icon)
+SELECT 'Transportasi', 'transport'
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Transportasi');
+
+INSERT INTO categories (name, icon)
+SELECT 'Hiburan', 'entertainment'
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Hiburan');
