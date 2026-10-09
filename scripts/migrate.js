@@ -22,7 +22,7 @@ const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
 
-const DB_NAME = process.env.DB_NAME || "soa_minggu6";
+const DB_NAME = process.env.DB_NAME || "asisten_keuangan";
 
 const bacaSql = (nama) =>
   fs.readFileSync(path.join(__dirname, "..", "sql", nama), "utf8");

@@ -17,7 +17,7 @@ const app = express();
 const logger = require("./src/middlewares/logger");
 const notFound = require("./src/middlewares/notFound");
 const errorHandler = require("./src/middlewares/errorHandler");
-const { contohRouter, bukuRouter, axiosRouter } = require("./src/routes");
+const { contohRouter, bukuRouter, axiosRouter, categoryRouter, userRouter } = require("./src/routes");
 const { testConnection } = require("./src/databases/connection");
 
 const port = process.env.PORT || 3001;
@@ -42,13 +42,15 @@ app.get("/", (req, res) =>
   res.json({
     service: "SOA Minggu 6",
     version: "1.0.0",
-    endpoints: ["/api/v1/contoh", "/api/v1/buku", "/api/v1/contohAxios"],
+    endpoints: ["/api/v1/contoh", "/api/v1/buku", "/api/v1/contohAxios", "/api/v1/categories", "/api/v1/users"],
   })
 );
 
 app.use("/api/v1/contoh", contohRouter);
 app.use("/api/v1/buku", bukuRouter);
 app.use("/api/v1/contohAxios", axiosRouter);
+app.use("/api/v1/categories", categoryRouter);
+app.use("/api/v1/users", userRouter);
 
 /* ------------------------------------------------------------------ */
 /* 3. PENANGKAP DI PALING BAWAH                                        */
