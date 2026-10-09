@@ -27,3 +27,23 @@ const methodNotAllowed = (...allowed) => {
 };
 
 module.exports = methodNotAllowed;
+
+
+//methodNotAllowed.js(transaction, user, category)(Dana)
+
+function methodNotAllowed(allowedMethods) {
+    return (req, res, next) => {
+        if (!allowedMethods.includes(req.method)) {
+            res.setHeader('Allow', allowedMethods.join(', '));
+
+            return res.status(405).json({
+                success: false,
+                message: 'Method Not Allowed'
+            });
+        }
+
+        next();
+    };
+}
+
+module.exports = methodNotAllowed;
