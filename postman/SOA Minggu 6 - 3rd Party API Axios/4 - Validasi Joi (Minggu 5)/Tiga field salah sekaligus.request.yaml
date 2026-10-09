@@ -1,0 +1,25 @@
+$kind: http-request
+description: "Username terlalu pendek, password lemah, umur di luar rentang. abortEarly: false -> SEMUA error dilaporkan dalam satu respons."
+url: "{{baseUrl}}/contoh/validasi"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "pengguna_username": "ab",
+      "pengguna_email": "jotaro@istts.edu",
+      "pengguna_password": "lemah",
+      "pengguna_konfirmasi_password": "lemah",
+      "pengguna_birthday": "1990-05-10",
+      "pengguna_umur": 10
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400', () => pm.response.to.have.status(400));
+      pm.test('melaporkan >=3 field sekaligus', () => pm.expect(Object.keys(pm.response.json().errors).length).to.be.at.least(3));
+      pm.test('errors per field berupa array', () => Object.values(pm.response.json().errors).forEach(v => pm.expect(v).to.be.an('array')));
+    language: text/javascript
+order: 2000

@@ -1,0 +1,3 @@
+$kind: collection
+description: "Service kita sebagai CLIENT: memanggil API pihak ketiga (Kitsu) lewat axios. Perhatikan tiga hal di response: (1) field-nya adalah KONTRAK KITA — bukan payload mentah upstream, (2) field opsional aman dari null, (3) upstream yang gagal menjadi 502/504, bukan 500."
+order: 6000

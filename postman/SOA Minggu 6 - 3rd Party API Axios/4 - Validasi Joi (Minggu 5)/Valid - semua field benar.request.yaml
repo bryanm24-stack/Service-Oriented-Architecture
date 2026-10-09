@@ -1,0 +1,25 @@
+$kind: http-request
+description: "Semua aturan terpenuhi. Perhatikan: `pengguna_umur` tidak dikirim, tapi muncul di `value` dengan nilai 17 (`.default()`), dan field asing `isAdmin` dibuang (stripUnknown)."
+url: "{{baseUrl}}/contoh/validasi"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "pengguna_username": "jotaro",
+      "pengguna_email": "jotaro@istts.edu",
+      "pengguna_password": "Kujo1234!",
+      "pengguna_konfirmasi_password": "Kujo1234!",
+      "pengguna_birthday": "1990-05-10",
+      "isAdmin": true
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('200', () => pm.response.to.have.status(200));
+      pm.test('default umur terisi 17', () => pm.expect(pm.response.json().value.pengguna_umur).to.eql(17));
+      pm.test('field asing dibuang (mass assignment)', () => pm.expect(pm.response.json().value).to.not.have.property('isAdmin'));
+    language: text/javascript
+order: 1000

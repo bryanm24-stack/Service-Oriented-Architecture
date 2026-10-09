@@ -1,0 +1,17 @@
+$kind: http-request
+description: "Kirim notifikasi keluar (fire-and-forget). Isi DISCORD_WEBHOOK_URL di .env untuk melihat pesannya di Discord. Kosong -> tetap 200, dilewati diam-diam. LATIHAN 5: rusak URL webhook, kirim lagi — tetap 200, bukan 500."
+url: "{{baseUrl}}/contohAxios/webhook"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "pesan": "Tes webhook dari SOA Minggu 6"
+    }
+scripts:
+  - type: afterResponse
+    code: pm.test('200 - webhook gagal tidak menggagalkan request', () => pm.response.to.have.status(200));
+    language: text/javascript
+order: 4000
