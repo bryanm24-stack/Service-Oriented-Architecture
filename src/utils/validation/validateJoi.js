@@ -19,6 +19,7 @@
 *      resource (buku, lalu tugas: kendaraan, pelanggan, transaksi).
 */
 const Joi = require("joi");
+const messages = require("./joiMessages");
 
 /**
 * Joi melaporkan error begini (datar, satu field bisa muncul berkali-kali):
@@ -64,7 +65,7 @@ details.reduce((hasil, item) => {
 const validasiJoi = (schema, body) => {
     const { error, value } = schema.validate(body, {
         abortEarly: false,
-
+        messages,
         errors: {
             label: "path"
         },
@@ -121,7 +122,7 @@ const validasiParsial = (schema, body) => {
     );
     const { error, value } = partial.validate(body, {
         abortEarly: false,
-
+        messages,
         errors: {
             label: "path"
         },
