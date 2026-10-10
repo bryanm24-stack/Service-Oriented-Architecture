@@ -1,240 +1,204 @@
+const { Op } = require('sequelize');
+const { Budget, BudgetCategory, User, Category, sequelize } = require('../models');
+const { budgetBody, budgetId, budgetListQuery } = require('../utils/validation/budgetSchemas');
+const { parse } = require('../utils/validation/resourceSchemas');
+const httpError = require('../utils/httpError');
 
-const { budgetSchema, idBudgetSchema } = require("../utils/validation");
-const { validasiJoi, validasiParsial } = require("../utils/validation/validateJoi");
-
-const { Budget, Budget_categories } = require("../models");
-const getAllBudgets = async (req, res) => {
-  try {
-    const budgets = await Budget.findAll({
-      include: [
-        {
-          model: Budget_categories,
-          as: "budget_categories",
-          through: { attributes: ['allocated_amount'] },
+const budgetInclude = [
+    {
+        model: Category,
+        as: 'categories',
+        attributes: ['id', 'name', 'icon'],
+        through: {
+            attributes: ['allocated_amount']
         },
-      ],
+        required: false
+    }
+];
+
+const joinedBudget = (id, transaction) => Budget.findByPk(id, {
+    include: budgetInclude,
+    transaction
+});
+
+const checkReferences = async (value, transaction) => {
+    const user = await User.findByPk(value.user_id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE
     });
-    res.json({ 
-      status: 'success', 
-      data: budgets 
+
+    if (!user) {
+        throw httpError(404, 'User aktif tidak ditemukan');
+    }
+
+    const ids = value.budget_categories.map(item => item.category_id);
+    const categories = await Category.findAll({
+        attributes: ['id'],
+        where: {
+            id: {
+                [Op.in]: ids
+            }
+        },
+        order: [['id', 'ASC']],
+        transaction,
+        lock: transaction.LOCK.UPDATE
     });
-  } catch (error) {
-        res.status(500).json({ 
-      error: "Terjadi kesalahan server", 
-      status: 'error', 
-      message: error.message 
+
+    if (categories.length !== ids.length) {
+        throw httpError(404, 'Satu atau lebih kategori tidak ditemukan');
+    }
+};
+
+const checkPeriod = async (value, transaction, excludedId) => {
+    const where = {
+        user_id: value.user_id,
+        month: value.month,
+        year: value.year
+    };
+
+    if (excludedId !== undefined) {
+        where.budget_id = {
+            [Op.ne]: excludedId
+        };
+    }
+
+    const duplicate = await Budget.findOne({ where, transaction });
+
+    if (duplicate) {
+        throw httpError(409, 'Budget untuk user dan periode tersebut sudah ada');
+    }
+
+    // UNIQUE SQL tetap menjadi perlindungan akhir jika ada request bersamaan.
+};
+
+const createAllocations = async (id, categories, transaction) => {
+    const values = categories.map(item => ({
+        budget_id: id,
+        category_id: item.category_id,
+        allocated_amount: item.allocated_amount
+    }));
+
+    await BudgetCategory.bulkCreate(values, {
+        transaction,
+        validate: true
     });
-  }
-}
+};
+
+const createBudget = async (req, res) => {
+    const value = parse(budgetBody, req.body);
+    const created = await sequelize.transaction(async transaction => {
+        await checkReferences(value, transaction);
+        await checkPeriod(value, transaction);
+
+        const budget = await Budget.create({
+            user_id: value.user_id,
+            month: value.month,
+            year: value.year
+        }, { transaction });
+
+        await createAllocations(budget.budget_id, value.budget_categories, transaction);
+
+        return joinedBudget(budget.budget_id, transaction);
+    });
+
+    return res.location(`/api/v1/budgets/${created.budget_id}`)
+        .status(201)
+        .json({ status: 'success', data: created });
+};
+
+const getAllBudgets = async (req, res) => {
+    const value = parse(budgetListQuery, req.query);
+    const where = {};
+
+    if (value.user_id !== undefined) {
+        where.user_id = value.user_id;
+    }
+
+    // Satu SELECT dengan JOIN. Tidak ada query kategori di dalam loop.
+    const budgets = await Budget.findAll({
+        where,
+        include: budgetInclude,
+        order: [['budget_id', 'ASC']]
+    });
+
+    return res.json({ status: 'success', data: budgets });
+};
 
 const getBudgetById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const budget = await Budget.findByPk(id, {
-      include: [
-        {
-          model: Budget_categories,
-          as: "budget_categories",
-          through: { attributes: ['allocated_amount'] },
-        },
-      ],
-    });
+    const id = parse(budgetId, req.params.id);
+    const budget = await joinedBudget(id);
+
     if (!budget) {
-      return res.status(404).json({ 
-        error: "Budget tidak ditemukan", 
-        status: 'error', 
-        message: `Budget dengan ID tersebut tidak ditemukan: ${error.message}` 
-      });
+        throw httpError(404, 'Budget tidak ditemukan');
     }
-    res.json({ 
-      status: 'success', 
-      data: budget 
-    });
-  } catch (error) {
-        res.status(500).json({ 
-      error: "Terjadi kesalahan server", 
-      status: 'error', 
-      message: error.message 
-    });
-  }
-}
-const createBudget = async (req, res) => {
-    const { error, value } = validasiJoi(req.body, budgetSchema);
-    if (error) {
-      return res.status(400).json({ 
-        error: "Validasi gagal", 
-        status: 'error', 
-        message: error.details[0].message 
-      });
-    }
-    const {user_id, month, year, budget_categories} = value;
-    const transaction = await Budget.sequelize.transaction();
-  try {
-    // budget sudah ada?
-    const existingBudget = await Budget.findOne({
-      where: { user_id, month, year },
-      transaction,
-    });
-    // kalo ada, return 409 conflict
-    if (existingBudget) {
-      await transaction.rollback();
-      return res.status(409).json({ 
-        error: "Budget sudah ada", 
-        status: 'error', 
-        message: `Budget untuk user_id ${user_id}, bulan ${month}, tahun ${year} sudah ada` 
-      });
-    }
-    // budget baru
-    const newBudget = await Budget.create({ user_id, month, year }, { transaction });
-    const pivotData = budget_categories.map(category => ({
-      budget_id: newBudget.budget_id,
-      budget_category_id: category.category_id,
-      allocated_amount: category.allocated_amount,
-    }));
-    await Budget_categories.bulkCreate(pivotData, { transaction });
-    // commit transaction setelah semua operasi berhasil
-    await transaction.commit();
 
-    const createdBudget = await Budget.findByPk(newBudget.budget_id, {
-      include: [
-        {
-          model: Budget_categories,
-          as: "budget_categories",
-          through: { attributes: ['allocated_amount'] },
-        },
-      ],
-    });
-    res.status(201).json({
-      status: 'success',
-      data: createdBudget,
-    });
-  } catch (error) {
-      res.status(500).json({ 
-      error: "Terjadi kesalahan server", 
-      status: 'error', 
-      message: error.message 
-    });
-  }
-}
+    return res.json({ status: 'success', data: budget });
+};
 
-// Update Budget (PUT)
 const updateBudget = async (req, res) => {
-  const { id } = req.params;
-  const { error, value } = validasiParsial(req.body, budgetSchema);
-  if (error) {
-    return res.status(400).json({ 
-      error: "Validasi gagal", 
-      status: 'error', 
-      message: error.details[0].message 
-    });
-  }
+    const id = parse(budgetId, req.params.id);
+    const value = parse(budgetBody, req.body);
+    const updated = await sequelize.transaction(async transaction => {
+        const budget = await Budget.findByPk(id, {
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
 
-  const {user_id, month, year, budget_categories} = value;
-  const transaction = await Budget.sequelize.transaction();
-  
-  try {
-    const budget = await Budget.findByPk(id, {transaction});
-    if (!budget) {
-      return res.status(404).json({ 
-        error: "Budget tidak ditemukan", 
-        status: 'error', 
-        message: `Budget dengan ID ${id} tidak ditemukan` 
-      });
-    }
+        if (!budget) {
+            throw httpError(404, 'Budget tidak ditemukan');
+        }
 
-    const existingBudget = await Budget.findOne({
-      where: { user_id, month, year,
-        id: { [Budget.sequelize.Op.ne]: id }
-       },
-      transaction,
-    });
+        await checkReferences(value, transaction);
+        await checkPeriod(value, transaction, id);
 
-    if (existingBudget) {
-      await transaction.rollback();
-      return res.status(409).json({ 
-        error: "Budget sudah ada", 
-        status: 'error', 
-        message: `Budget untuk user_id ${user_id} untuk periode ${month}/${year} sudah ada` 
-      });
-    }
+        await budget.update({
+            user_id: value.user_id,
+            month: value.month,
+            year: value.year
+        }, { transaction });
 
-    await budget.update({ user_id, month, year }, { transaction });
+        // PUT mengganti seluruh daftar alokasi secara atomik.
+        await BudgetCategory.destroy({
+            where: { budget_id: id },
+            transaction
+        });
 
-    await Budget_categories.destroy({ where: { budget_id: id }, transaction });
-    const pivotData = budget_categories.map(category => ({
-      budget_id: id,
-      budget_category_id: category.category_id,
-      allocated_amount: category.allocated_amount,
-    }));
-    await Budget_categories.bulkCreate(pivotData, { transaction });
+        await createAllocations(id, value.budget_categories, transaction);
 
-    await transaction.commit();
-    const updatedBudget = await Budget.findByPk(id, {
-      include: [
-        {
-          model: Budget_categories,
-          as: "budget_categories",
-          through: { attributes: ['allocated_amount'] },
-        },
-      ],
-    });
-    res.json({
-      status: 'success',
-      message: `Budget dengan ID ${id} berhasil diperbarui`,
-      data: updatedBudget,
+        return joinedBudget(id, transaction);
     });
 
-  } catch (error) {
-      res.status(500).json({ 
-      error: "Terjadi kesalahan server", 
-      status: 'error', 
-      message: error.message 
-    });
-  }
-}
+    return res.json({ status: 'success', data: updated });
+};
+
 const deleteBudget = async (req, res) => {
-    const { error, value } = validasiParsial(req.body, idBudgetSchema);
-    if (error) {
-      return res.status(400).json({ 
-        error: "Parameter ID tidak valid", 
-        status: 'error', 
-        message: error.details[0].message 
-      });
-    }
+    const id = parse(budgetId, req.params.id);
 
-    const { id } = value;
-    const transaction = await Budget.sequelize.transaction();
+    await sequelize.transaction(async transaction => {
+        const budget = await Budget.findByPk(id, {
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
 
-  try {
-    const budget = await Budget.findOne({ where: { id }, transaction });
-    if (!budget) {
-      return res.status(404).json({ 
-        error: "Budget tidak ditemukan", 
-        status: 'error', 
-        message: `Budget dengan ID ${id} tidak ditemukan` 
-      });
-    }
-    await Budget_categories.destroy({ where: { budget_id: id }, transaction });
-    await budget.destroy({ transaction });
-    await transaction.commit();
-    return res.status(200).json({
-      status: 'success',
-      message: `Budget dengan ID ${id} berhasil dihapus`,
+        if (!budget) {
+            throw httpError(404, 'Budget tidak ditemukan');
+        }
+
+        await BudgetCategory.destroy({
+            where: { budget_id: id },
+            transaction
+        });
+
+        await budget.destroy({ transaction });
     });
-  } catch (error) {
-    await transaction.rollback();
-    res.status(500).json({ 
-      error: "Terjadi kesalahan server", 
-      status: 'error', 
-      message: error.message 
-    });
-  }
-}
+
+    return res.status(204).send();
+};
 
 module.exports = {
-  getAllBudgets,
-  getBudgetById,
-  createBudget,
-  updateBudget,
-  deleteBudget
+    createBudget,
+    getAllBudgets,
+    getBudgetById,
+    updateBudget,
+    deleteBudget
 };

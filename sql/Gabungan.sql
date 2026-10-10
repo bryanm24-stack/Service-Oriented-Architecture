@@ -1,8 +1,15 @@
 -- DATABASE GABUNGAN
--- Sumber: schema.sql + seed.sql (sudah mencakup isi versi materi).
+-- Revisi: Transactions 1:N, tambahan Budget dan pivot N:M.
+-- Semua tabel dan seed materi lama dipertahankan.
+-- CREATE TABLE IF NOT EXISTS tidak mengubah struktur tabel yang sudah ada.
 -- Jalankan pada database yang sama dengan DB_NAME di .env.
--- Pilih database tersebut sebelum mengimpor file ini.
+-- Impor manual memakai asisten_keuangan; npm run db:migrate mengikuti DB_NAME.
 -- Tabel yang sudah ada dan data lama tidak dihapus atau ditimpa.
+
+-- BEGIN DATABASE SELECTION
+CREATE DATABASE IF NOT EXISTS `asisten_keuangan` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `asisten_keuangan`;
+-- END DATABASE SELECTION
 
 -- ============================================================
 -- 1. STRUKTUR TABEL
@@ -85,6 +92,51 @@ CREATE TABLE IF NOT EXISTS transactions (
   INDEX idx_transactions_category (id_category),
   INDEX idx_transactions_user (id_user),
   INDEX idx_transactions_nominal (nominal)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- TABEL BUDGET DAN PIVOT (modul Rafael aktif)
+-- user_id memakai INT signed, sama dengan users.id.
+-- Model Budget aktif sudah memakai tipe FK yang sama dengan tabel users.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS budget (
+    budget_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    month INT UNSIGNED NOT NULL,
+    year INT UNSIGNED NOT NULL,
+
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_budget_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+
+    UNIQUE KEY uq_budget_user_period (user_id, month, year)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS budget_categories (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    budget_id INT UNSIGNED NOT NULL,
+    category_id INT UNSIGNED NOT NULL,
+    allocated_amount DECIMAL(10, 2) NOT NULL,
+
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_budget_categories_budget
+        FOREIGN KEY (budget_id) REFERENCES budget(budget_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_budget_categories_category
+        FOREIGN KEY (category_id) REFERENCES categories(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+
+    UNIQUE KEY uq_budget_category (budget_id, category_id),
+    INDEX idx_budget_categories_category (category_id)
 ) ENGINE=InnoDB;
 
 -- ============================================================

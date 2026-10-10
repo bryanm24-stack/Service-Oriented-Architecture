@@ -414,7 +414,7 @@ test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
 
     const sql = fs.readFileSync(path.join(__dirname, "../sql/Gabungan.sql"), "utf8");
 
-    assert.equal((sql.match(/CREATE TABLE IF NOT EXISTS/g) || []).length, 6);
+    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 8);
 
     assert.match(sql, /id_category INT UNSIGNED NOT NULL/);
 
@@ -425,6 +425,11 @@ test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
     assert.match(sql, /REFERENCES users\(id\) ON DELETE RESTRICT/);
 
     assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|REPLACE|UPDATE)\s/im);
+
+    assert.match(sql, /UNIQUE KEY uq_budget_user_period \(user_id, month, year\)/);
+    assert.match(sql, /UNIQUE KEY uq_budget_category \(budget_id, category_id\)/);
+    assert.match(sql, /FOREIGN KEY \(budget_id\) REFERENCES budget\(budget_id\)/);
+    assert.match(sql, /allocated_amount DECIMAL\(10, 2\) NOT NULL/);
 
     await db.sequelize.close();
 });

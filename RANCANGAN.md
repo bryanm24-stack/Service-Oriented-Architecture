@@ -2,7 +2,7 @@
 
 ## Cakupan dan status
 
-Implementasi ini menghubungkan Users, Categories, Transactions, dan endpoint konversi kurs. Endpoint materi Buku, Contoh, serta ContohAxios dipertahankan. File Budgets dari unggahan tetap ada tetapi belum terdaftar sebagai endpoint aktif; penyelesaian modul tersebut berada di luar paket nomor 4–5 ini. Jangan menganggap seluruh soal UTS sudah selesai.
+Implementasi ini menghubungkan Users, Categories, Transactions, Budget, dan endpoint konversi kurs melalui index.js / npm start. Endpoint materi Buku, Contoh, serta ContohAxios dipertahankan. Integrasi Budget tidak berarti seluruh kriteria UTS di luar cakupan ini telah selesai.
 
 Kontrol akses di bawah adalah **rancangan**, sesuai pembahasan nomor 4. Kode belum menerapkan login, JWT, pemeriksaan peran, atau pembatasan pemilik data. Endpoint lokal masih dapat dipanggil tanpa autentikasi. Hash password tidak sama dengan autentikasi maupun otorisasi.
 
@@ -83,3 +83,63 @@ Tidak ada fallback kurs dan tidak memakai angka kurs palsu ketika provider gagal
 
 - [ExchangeRate-API Standard Requests](https://www.exchangerate-api.com/docs/standard-requests)
 - [Axios Handling Errors](https://axios-http.com/docs/handling_errors)
+
+
+## Dana — Transactions, relasi 1:N, ORM dan raw query
+
+Satu User memiliki banyak Transactions melalui `users.id` ke `transactions.id_user`.
+Satu Category memiliki banyak Transactions melalui `categories.id` ke `transactions.id_category`.
+Registrasi relasi berada di `src/models/index.js`: User/Category memakai hasMany,
+sedangkan Transaction memakai belongsTo. Foreign key SQL menguatkan hubungan tersebut.
+
+Lima endpoint wajib Dana adalah POST /transactions, GET /transactions,
+GET /categories/:id/transactions, PATCH /transactions/:id dan DELETE /transactions/:id,
+semuanya dengan prefix /api/v1. POST memberikan 201 dan Location. PATCH hanya menerima
+nominal/catatan; ID referensi tidak dapat dipindahkan melalui PATCH ini.
+
+GET /transactions?mode=orm memakai findAll dan include ke Category/User.
+ORM memudahkan penggunaan relasi, Op.like, Op.gte, Op.lte, pagination, dan penyusunan
+query tanpa menulis JOIN secara manual. Kekurangannya, bentuk SQL bergantung pada
+pemetaan dan opsi Sequelize, sehingga perlu diperiksa saat optimasi.
+
+GET /transactions?mode=raw memakai sequelize.query dengan JOIN eksplisit dan replacements.
+Raw query memberi kendali atas kolom dan struktur SQL, tetapi penulis bertanggung jawab
+menjaga JOIN, filter soft delete, serta parameter tetap aman. Nilai pencarian dan batas
+nominal memakai replacements. Arah sorting dibatasi Joi menjadi asc/desc sebelum
+interpolasi karena kata kunci SQL tidak dapat dipasang sebagai parameter nilai biasa.
+
+Kedua versi disediakan untuk memenuhi perbandingan ORM dan raw pada tugas. Keduanya
+menghasilkan bentuk respons yang sama: nominal berupa string, category/user berupa
+objek terpilih, dan user yang soft-deleted ditampilkan sebagai null. Ini dua versi
+operasi baca, bukan menulis transaksi dua kali. Endpoint konversi kurs adalah fitur
+tambahan nomor 5, di luar lima endpoint inti Dana.
+
+## Pembaruan SQL Budget
+
+Gabungan.sql kini juga membuat `budget` dan `budget_categories`. Pivot memiliki
+allocated_amount, foreign key ke Budget/Category, serta batas unik pasangan
+(budget_id, category_id). Budget memiliki batas unik (user_id, month, year).
+Penghapusan Budget menghapus alokasinya melalui CASCADE; kategori yang masih dipakai
+pivot ditahan RESTRICT. Soft delete User tetap mempertahankan data historis.
+
+Modul Budget aktif melalui registrasi model/router utama. Budget.user_id memakai
+DataTypes.INTEGER, sama dengan users.id. Kolom pivot adalah category_id. Joi memvalidasi
+bulan, tahun, ID, alokasi, dan kelengkapan PUT. Pesan tersedia pada .messages() di budgetSchemas.js.
+
+## Rafael — Budget dan relasi N:M
+
+Budget belongsTo User. Budget belongsToMany Category melalui Budget_categories;
+Category memiliki asosiasi balik belongsToMany Budget. Pivot menyimpan allocated_amount.
+GET list/detail memakai include Category dengan through.attributes allocated_amount,
+sehingga kategori dan alokasinya tersedia pada satu SELECT JOIN. Tidak ada query kategori
+per item dalam loop (N+1). Tes telah memeriksa SQL hasil Sequelize, bukan eksekusi MySQL nyata.
+
+Lima endpoint aktif: POST /budgets, GET /budgets, GET /budgets/:id,
+PUT /budgets/:id, DELETE /budgets/:id, semuanya dengan prefiks /api/v1.
+Periode user/month/year duplikat ditolak 409, dengan pengecekan controller dan unique SQL.
+POST, PUT, dan DELETE memakai transaksi database. PUT mengganti alokasi secara atomik;
+kegagalan penulisan pivot membatalkan perubahan parent dan pivot.
+
+Bukti eksekusi satu SELECT JOIN dari MySQL belum tersedia. Jalankan
+node scripts/bukti-budget-join.js untuk menghasilkan dokumen BUKTI-BUDGET-JOIN-<waktu>.md.
+Dokumen tersebut menjadi lampiran bukti aktual; kode atau tes simulasi bukan log MySQL nyata.

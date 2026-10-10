@@ -5,8 +5,10 @@ const path = require("path");
 const mysql = require("mysql2/promise");
 
 const main = async () => {
-    const database = process.env.DB_NAME || "soa_minggu6";
-    const sql = fs.readFileSync(path.join(__dirname, "..", "sql", "Gabungan.sql"), "utf8");
+    const database = process.env.DB_NAME || "asisten_keuangan";
+    // Pemilihan DB dilakukan dari .env; blok untuk impor manual dilewati.
+    const sql = fs.readFileSync(path.join(__dirname, "..", "sql", "Gabungan.sql"), "utf8")
+        .replace(/-- BEGIN DATABASE SELECTION[\s\S]*?-- END DATABASE SELECTION/, "");
     const connection = await mysql.createConnection({
         host: process.env.DB_HOST || "127.0.0.1",
         port: Number(process.env.DB_PORT) || 3306,

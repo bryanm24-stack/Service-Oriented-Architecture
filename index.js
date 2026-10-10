@@ -16,7 +16,7 @@ app.use(require("./src/middlewares/logger"));
 app.get("/", (req, res) => res.json({
     service: "SOA Asisten Keuangan",
     version: "1.0.0",
-    endpoints: ["/api/v1/users", "/api/v1/categories", "/api/v1/transactions",
+    endpoints: ["/api/v1/users", "/api/v1/categories", "/api/v1/transactions", "/api/v1/budgets",
     "/api/v1/contoh", "/api/v1/buku", "/api/v1/contohAxios"],
 }));
 
@@ -25,6 +25,8 @@ app.use("/api/v1", routes.transactionRouter);
 app.use("/api/v1/users", routes.userRouter);
 
 app.use("/api/v1/categories", routes.categoryRouter);
+
+app.use("/api/v1/budgets", routes.budgetRouter);
 
 app.use("/api/v1/contoh", routes.contohRouter);
 
