@@ -1,100 +1,48 @@
-const { Model } = require("sequelize");
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../databases/connection');
 
-module.exports = (sequelize, DataTypes) => {
-  class Category extends Model {
-    static associate(models) {
-      // Relasi ini aktif setelah model Transaction milik Dana sudah digabung.
-      if (models.Transaction) {
-        Category.hasMany(models.Transaction, {
-          foreignKey: "categoryId",
-          as: "transactions",
-        });
-      }
-    }
-  }
-
-  Category.init(
+const Category = sequelize.define(
+    'Category',
     {
-      id: {
-        type: DataTypes.INTEGER.UNSIGNED,
-        autoIncrement: true,
-        primaryKey: true,
-      },
-
-      name: {
-        type: DataTypes.STRING(100),
-        allowNull: false,
-
-        validate: {
-          notEmpty: {
-            msg: "Nama category tidak boleh kosong",
-          },
-          len: {
-            args: [1, 100],
-            msg: "Nama category maksimal 100 karakter",
-          },
+        id: {
+            type: DataTypes.INTEGER.UNSIGNED,
+            primaryKey: true,
+            autoIncrement: true
         },
-
-        // Getter/Setter requirement
-        set(value) {
-          this.setDataValue(
-            "name",
-            String(value).trim().replace(/\s+/g, " ")
-          );
+        name: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+                len: [1, 100]
+            },
+            set(value) {
+                this.setDataValue("name", typeof value === "string"
+                ? value.trim().replace(/\s+/g, " ") : value);
+            },
         },
-      },
-
-      icon: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-
-        set(value) {
-          if (value === null || value === undefined || value === "") {
-            this.setDataValue("icon", null);
-            return;
-          }
-
-          this.setDataValue("icon", String(value).trim());
+        icon: {
+            type: DataTypes.STRING(255),
+            allowNull: true
         },
-      },
+        formatted_name: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                const name = this.getDataValue("name");
 
-      // VIRTUAL: tidak tersimpan di database
-      formatted_name: {
-        type: DataTypes.VIRTUAL,
-
-        get() {
-          const name = this.getDataValue("name");
-
-          if (!name) {
-            return null;
-          }
-
-          return name
-            .toLowerCase()
-            .replace(/\b\w/g, (char) => char.toUpperCase());
+                return name ? name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : null;
+            },
         },
-
-        set() {
-          throw new Error(
-            "formatted_name dihitung otomatis dan tidak dapat diisi"
-          );
-        },
-      },
     },
     {
-      sequelize,
-      modelName: "Category",
-      tableName: "categories",
-
-      timestamps: true,
-
-      defaultScope: {
-        attributes: {
-          exclude: ["createdAt", "updatedAt"],
-        },
-      },
+        tableName: "categories",
+        timestamps: true,
+        defaultScope: {
+            attributes: {
+                exclude: ["createdAt", "updatedAt"]
+            }
+        }
     }
-  );
+);
 
-  return Category;
-};
+module.exports = Category;

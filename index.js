@@ -1,116 +1,49 @@
-/**
- * TITIK MASUK APLIKASI
- */
-
 require("dotenv").config();
 
 const express = require("express");
-
 const app = express();
-
-const logger =
-  require("./src/middlewares/logger");
-
-const notFound =
-  require("./src/middlewares/notFound");
-
-const errorHandler =
-  require("./src/middlewares/errorHandler");
-
-const {
-  contohRouter,
-  bukuRouter,
-  axiosRouter,
-  categoryRouter,
-} = require("./src/routes");
-
-const {
-  testConnection,
-} = require("./src/databases/connection");
-
-
-const port =
-  process.env.PORT || 3001;
-
-
-// ============================================================
-// MIDDLEWARE GLOBAL
-// ============================================================
+const routes = require("./src/routes");
+const { testConnection } = require("./src/databases/connection");
 
 app.use(express.json());
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
+app.use(express.urlencoded({
+    extended: true
+}));
 
-app.use(logger);
+app.use(require("./src/middlewares/logger"));
 
-
-// ============================================================
-// ROOT
-// ============================================================
-
-app.get("/", (req, res) => {
-  return res.json({
-    service: "SOA Minggu 6",
+app.get("/", (req, res) => res.json({
+    service: "SOA Asisten Keuangan",
     version: "1.0.0",
+    endpoints: ["/api/v1/users", "/api/v1/categories", "/api/v1/transactions",
+    "/api/v1/contoh", "/api/v1/buku", "/api/v1/contohAxios"],
+}));
 
-    endpoints: [
-      "/api/v1/contoh",
-      "/api/v1/buku",
-      "/api/v1/contohAxios",
-      "/api/v1/categories",
-    ],
-  });
-});
+app.use("/api/v1", routes.transactionRouter);
 
+app.use("/api/v1/users", routes.userRouter);
 
-// ============================================================
-// ROUTER
-// ============================================================
+app.use("/api/v1/categories", routes.categoryRouter);
 
-app.use(
-  "/api/v1/contoh",
-  contohRouter
-);
+app.use("/api/v1/contoh", routes.contohRouter);
 
-app.use(
-  "/api/v1/buku",
-  bukuRouter
-);
+app.use("/api/v1/buku", routes.bukuRouter);
 
-app.use(
-  "/api/v1/contohAxios",
-  axiosRouter
-);
+app.use("/api/v1/contohAxios", routes.axiosRouter);
 
-app.use(
-  "/api/v1/categories",
-  categoryRouter
-);
+app.use(require("./src/middlewares/notFound"));
 
+app.use(require("./src/middlewares/errorHandler"));
 
-// ============================================================
-// ERROR HANDLER
-// ============================================================
+if (require.main === module) {
+    const port = process.env.PORT || 3001;
 
-// Route tidak ditemukan
-app.use(notFound);
+    app.listen(port, () => {
+        console.log(`Server berjalan di port ${port}`);
 
-// Error server
-app.use(errorHandler);
+        testConnection();
+    });
+}
 
-
-// ============================================================
-// SERVER
-// ============================================================
-
-app.listen(port, () => {
-  console.log(
-    `Example app listening on port ${port}!`
-  );
-
-  testConnection();
-});
+module.exports = app;

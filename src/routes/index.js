@@ -1,19 +1,8 @@
-const contohRouter =
-  require("./contoh");
-
-const bukuRouter =
-  require("./buku");
-
-const axiosRouter =
-  require("./contohAxios");
-
-const categoryRouter =
-  require("./category");
-
-
 module.exports = {
-  contohRouter,
-  bukuRouter,
-  axiosRouter,
-  categoryRouter,
+    contohRouter: require("./contoh"),
+    bukuRouter: require("./buku"),
+    axiosRouter: require("./contohAxios"),
+    categoryRouter: require("./category"),
+    userRouter: require("./userRoutes"),
+    transactionRouter: require("./transactionRoutes"),
 };

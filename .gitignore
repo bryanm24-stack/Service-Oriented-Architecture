@@ -7,3 +7,9 @@ uploads/*
 # Materi jawaban dosen — kunci jawaban studi kasus, JANGAN PERNAH
 # ikut commit atau dibagikan ke mahasiswa lewat repo ini.
 dosen/
+
+.env
+.env.*
+!.env.example
+node_modules/
+*.log

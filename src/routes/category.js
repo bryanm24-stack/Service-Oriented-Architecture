@@ -3,17 +3,17 @@ const express = require("express");
 const router = express.Router();
 
 const methodNotAllowed =
-  require("../middlewares/methodNotAllowed");
+require("../middlewares/methodNotAllowed");
 
 const asyncHandler =
-  require("../utils/asyncHandler");
+require("../utils/asyncHandler");
 
 const {
-  createCategory,
-  getCategories,
-  getCategoryById,
-  updateCategory,
-  deleteCategory,
+createCategory,
+getCategories,
+getCategoryById,
+updateCategory,
+deleteCategory,
 } = require("../controllers/category");
 
 
@@ -22,16 +22,16 @@ const {
 // ============================================================
 
 router
-  .route("/")
-  .get(
+.route("/")
+.get(
     asyncHandler(getCategories)
-  )
-  .post(
+)
+.post(
     asyncHandler(createCategory)
-  )
-  .all(
+)
+.all(
     methodNotAllowed("GET", "POST")
-  );
+);
 
 
 // ============================================================
@@ -39,23 +39,22 @@ router
 // ============================================================
 
 router
-  .route("/:id")
-  .get(
+.route("/:id")
+.get(
     asyncHandler(getCategoryById)
-  )
-  .patch(
+)
+.patch(
     asyncHandler(updateCategory)
-  )
-  .delete(
+)
+.delete(
     asyncHandler(deleteCategory)
-  )
-  .all(
+)
+.all(
     methodNotAllowed(
-      "GET",
-      "PATCH",
-      "DELETE"
+        "GET",
+        "PATCH",
+        "DELETE"
     )
-  );
-aaa
+);
 
 module.exports = router;
