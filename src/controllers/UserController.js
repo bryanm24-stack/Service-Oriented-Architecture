@@ -1,6 +1,8 @@
 const { hashPassword } = require('../utils/password');
 const { Op, QueryTypes } = require("sequelize");
 const { User, sequelize } = require("../models");
+const { requestUpstream } = require('../services/upstream');
+const httpError = require('../utils/httpError');
 const { parse, idSchema, userCreate, userPatch, userQuery } = require("../utils/validation/resourceSchemas");
 
 const publicUser = user => {
@@ -110,6 +112,55 @@ const getUserByIdRaw = async (req, res) => {
     res.json(user);
 };
 
+const getUserSubscription = async (req, res) => {
+    // Validasi input ID menggunakan Joi idSchema
+    const id = parse(idSchema, req.params.id);
+
+    // Ambil profil dari database (Syarat: gabungkan data lokal dan API luar)
+    const user = await User.findByPk(id);
+    if (!user) {
+        throw httpError(404, "User tidak ditemukan"); 
+    }
+
+    const serverKey = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-DUMMY';
+    const authString = Buffer.from(serverKey + ':').toString('base64');
+    // Ubah baris ini (sementara untuk testing):
+const orderId = '5ee64835-fddf-4926-8c28-2e1ed355843f';
+
+    // Panggilan axios diwakilkan oleh layanan requestUpstream milik dosen
+    // Otomatis menembak error 502 / 504 sesuai timeout
+    const response = await requestUpstream({
+        method: 'GET',
+        url: `https://api.sandbox.midtrans.com/v2/${orderId}/status`,
+        headers: {
+            'Authorization': `Basic ${authString}`,
+            'Accept': 'application/json'
+        }
+    });
+
+    // Syarat: null-safe dan tidak meneruskan response mentah apa adanya
+    if (!response.data || typeof response.data.transaction_status === 'undefined') {
+        throw httpError(502, 'Respons layanan Midtrans tidak valid');
+    }
+
+    // Mapping field sesuai kontrak buatanmu
+    const hasil = {
+        profil_pengguna: {
+            id_pengguna: user.id,
+            nama: user.name,
+            email: user.email
+        },
+        info_langganan: {
+            status_pembayaran: response.data?.transaction_status ?? 'unknown',
+            metode_pembayaran: response.data?.payment_type ?? 'belum_ada',
+            waktu_transaksi: response.data?.transaction_time ?? null,
+            sumber_data: "Midtrans API"
+        }
+    };
+
+    return res.json({ data: hasil });
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
@@ -117,5 +168,6 @@ module.exports = {
     updateUser,
     patchUser,
     deleteUser,
-    getUserByIdRaw
+    getUserByIdRaw,
+    getUserSubscription
 };

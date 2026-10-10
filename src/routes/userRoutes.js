@@ -15,4 +15,9 @@ router.route("/:id")
 .delete(asyncHandler(controller.deleteUser))
 .all(methodNotAllowed("GET", "PUT", "PATCH", "DELETE"));
 
+// Tambahkan di bagian bawah sebelum module.exports = router;
+router.route('/:id/subscription-status')
+    .get(asyncHandler(controller.getUserSubscription))
+    .all(methodNotAllowed("GET"));
+    
 module.exports = router;
