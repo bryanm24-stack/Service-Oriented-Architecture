@@ -33,9 +33,11 @@ Kasus gagal yang diuji: beberapa field invalid sekaligus (400), data hilang (404
 
 Endpoint konversi memakai EXCHANGE_RATE_API_KEY. Default environment Postman `conversionExpectedStatus=503` untuk kondisi API belum dikonfigurasi. Setelah key benar diisi pada .env, ubah menjadi `200` untuk menguji jalur sukses. Tidak ada key dalam collection.
 
-Endpoint subscription-status dipertahankan dari versi sebelumnya. Order ID yang sama untuk semua user dan fallback key dummy telah dihapus. Isi MIDTRANS_SERVER_KEY dan MIDTRANS_ORDER_IDS pada .env. MIDTRANS_ORDER_IDS adalah objek JSON berisi pemetaan ID user ke order milik user tersebut, misalnya `{"1":"ORDER-USER-1"}`. Ini konfigurasi prototipe; aplikasi produksi perlu tabel order dan verifikasi kepemilikan.
+Endpoint subscription-status menggabungkan profil User dari MySQL dengan status pembayaran dari service `src/services/midtrans.js`. Isi MIDTRANS_ENVIRONMENT (default sandbox), MIDTRANS_SERVER_KEY, dan MIDTRANS_ORDER_IDS pada .env. Pemetaan mendukung string order ID, misalnya `{"1":"ORDER-USER-1"}`, atau objek `{"1":{"order_id":"ORDER-USER-1","transaction_id":"ID-DARI-PROVIDER"}}`. Service mencocokkan identitas respons dengan pemetaan serta menolak order yang digunakan dua user. Tidak ada order global tetap atau fallback key dummy.
 
-Default `subscriptionExpectedStatus=503` menguji user yang belum memiliki pemetaan order. Untuk jalur sukses, isi `midtransUserId` di environment dengan user yang memiliki order terkonfigurasi, lalu atur `subscriptionExpectedStatus=200`. Perekaman sukses provider nyata belum dilakukan dalam paket ini. Status 503 yang sesuai konfigurasi tidak dianggap bukti API sukses.
+Default `subscriptionExpectedStatus=503` menguji konfigurasi yang belum siap. Untuk pengambilan status sukses, isi `midtransUserId` dan `midtransOrderId` dengan user/order yang benar-benar tersedia, lalu atur `subscriptionExpectedStatus=200`. Pemeriksaan read-only juga tersedia melalui `npm run midtrans:check -- ID_USER`. Server Key dan order asli tidak tersedia dalam .env unggahan, sehingga keberhasilan pada provider nyata belum terverifikasi.
+
+Endpoint hanya membaca status order; pemetaan masih berupa konfigurasi operator, bukan tabel pembayaran atau sistem langganan lengkap. Panduan konfigurasi, perubahan, dan batas pengujian ada di [PEMERIKSAAN-MIDTRANS.md](PEMERIKSAAN-MIDTRANS.md).
 
 Server harus direstart setelah mengubah .env. Jangan mengubah expected status menjadi 502/500 hanya agar tes hijau; kegagalan tersebut perlu diperiksa.
 
@@ -54,7 +56,7 @@ npm test
 node scripts/bukti-budget-join.js
 ```
 
-`npm test` menggunakan database simulasi, tanpa mengubah MySQL pengguna. 17 tes lulus. Koleksi 52 request juga dijalankan dengan Newman terhadap aplikasi Express asli dengan database simulasi: 128 assertion lulus. Ini belum membuktikan eksekusi pada MySQL atau provider API asli.
+`npm test` menggunakan database simulasi, tanpa mengubah MySQL pengguna. 24 tes lulus. Koleksi 52 request juga dijalankan dengan Newman terhadap aplikasi Express asli dengan database simulasi: 128 assertion lulus. Request Midtrans pada jalur HTTP 200 juga lulus 5 assertion dengan provider simulasi. Ini belum membuktikan eksekusi pada MySQL atau provider API asli.
 
 Perekam SQL memerlukan MySQL serta Budget berisi kategori. Ia menulis log nyata ke RANCANGAN.md hanya setelah pemeriksaan lolos. Runner Postman membersihkan Budget percobaannya, jadi data untuk bukti harus tersedia saat perekam dijalankan. Baca BUKTI-SQL-MULAI.md.
 

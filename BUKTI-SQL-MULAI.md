@@ -65,4 +65,4 @@ Jika menerapkan pada folder versi (6) yang sudah berjalan, kedua file JavaScript
 
 ## Status pengujian paket
 
-17 tes lulus, termasuk lima tes perekam untuk perekam, penolakan N+1, pemulihan logger, cadangan byte asli, dan pembaruan dokumen tanpa menggandakan bagian bukti. Seluruh pengujian sukses perekam memakai simulasi. Bukti SQL MySQL aktual belum tersedia dalam paket ini; baru dihasilkan saat skrip berhasil dijalankan pada database Anda.
+24 tes lulus, termasuk lima tes perekam untuk perekam, penolakan N+1, pemulihan logger, cadangan byte asli, dan pembaruan dokumen tanpa menggandakan bagian bukti. Seluruh pengujian sukses perekam memakai simulasi. Bukti SQL MySQL aktual belum tersedia dalam paket ini; baru dihasilkan saat skrip berhasil dijalankan pada database Anda.

@@ -554,7 +554,8 @@
             "request": {
                 "method": "GET",
                 "header": [],
-                "url": "{{baseUrl}}/api/v1/users/{{subscriptionUserId}}/subscription-status"
+                "url": "{{baseUrl}}/api/v1/users/{{subscriptionUserId}}/subscription-status",
+                "description": "Membaca status pembayaran order pengguna yang dipetakan pada MIDTRANS_ORDER_IDS di .env server. Untuk sukses: isi midtransUserId dan midtransOrderId pada environment Postman, lalu subscriptionExpectedStatus=200. Nilai 503 hanya menguji konfigurasi belum siap. Endpoint ini tidak membuat order atau mengaktifkan langganan."
             },
             "event": [
                 {
@@ -573,8 +574,25 @@
                         "exec": [
                             "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(Number(pm.environment.get(\"subscriptionExpectedStatus\") || 503)));",
                             "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
-                            "if (pm.response.code === 200) pm.test('Profil dan status pembayaran tergabung', () => { pm.expect(pm.response.json().data).to.have.property('profil_pengguna'); pm.expect(pm.response.json().data).to.have.property('info_langganan'); });",
-                            "if (pm.response.code === 503) pm.test('Konfigurasi order belum tersedia', () => pm.expect(pm.response.json().msg).to.include('belum dikonfigurasi'));"
+                            "if (pm.response.code === 200) {",
+                            "    const data = pm.response.json().data;",
+                            "    pm.test(\"Profil sesuai ID pengguna yang diminta\", () => {",
+                            "        pm.expect(data.profil_pengguna.id_pengguna).to.eql(Number(pm.variables.get(\"subscriptionUserId\")));",
+                            "        pm.expect(data.profil_pengguna).not.to.have.property(\"password\");",
+                            "    });",
+                            "    pm.test(\"Order sesuai pemetaan pengguna\", () => {",
+                            "        const expectedOrder = pm.environment.get(\"midtransOrderId\");",
+                            "        pm.expect(expectedOrder, \"Isi midtransOrderId untuk uji sukses Midtrans\").to.be.a(\"string\").and.not.empty;",
+                            "        pm.expect(data.info_langganan.id_order).to.eql(expectedOrder);",
+                            "    });",
+                            "    pm.test(\"Status pembayaran terpilih dan rahasia provider tidak diteruskan\", () => {",
+                            "        pm.expect(data.info_langganan.status_pembayaran).to.be.oneOf([\"authorize\", \"capture\", \"settlement\", \"pending\", \"deny\", \"cancel\", \"expire\", \"failure\", \"refund\", \"partial_refund\", \"chargeback\", \"partial_chargeback\"]);",
+                            "        pm.expect(data.info_langganan.sumber_data).to.eql(\"Midtrans API\");",
+                            "        pm.expect(data.info_langganan).not.to.have.property(\"signature_key\");",
+                            "        pm.expect(data.info_langganan).not.to.have.property(\"server_key\");",
+                            "    });",
+                            "}",
+                            "if (pm.response.code === 503) pm.test(\"Konfigurasi Midtrans belum siap\", () => pm.expect(pm.response.json().msg).to.match(/midtrans/i));"
                         ]
                     }
                 }
