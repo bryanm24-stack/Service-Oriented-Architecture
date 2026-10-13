@@ -88,17 +88,18 @@ test('Nested user terisolasi, PATCH mempertahankan alokasi, summary hanya period
 });
 
 test('Midtrans memakai order milik user, tidak memakai order tetap atau key dummy', async () => {
-    const keys = ['MIDTRANS_SERVER_KEY', 'MIDTRANS_ORDER_IDS'];
+    const keys = ['MIDTRANS_SERVER_KEY', 'MIDTRANS_ORDER_IDS', 'MIDTRANS_ENVIRONMENT'];
     const previous = keys.map(key => process.env[key]);
     const original = axios.defaults.adapter;
     try {
         await withStore(async request => {
             const user = await request('POST', '/users', 201, { name: 'Order', email: 'order@example.com', password: 'Password123!' });
-            process.env.MIDTRANS_SERVER_KEY = 'TEST_KEY';
+            process.env.MIDTRANS_ENVIRONMENT = 'sandbox';
+            process.env.MIDTRANS_SERVER_KEY = 'SB-Mid-server-unit-test';
             process.env.MIDTRANS_ORDER_IDS = JSON.stringify({ [user.id]: 'order/user-1' });
             axios.defaults.adapter = async config => {
                 assert(config.url.endsWith('/order%2Fuser-1/status'));
-                return { status: 200, data: { transaction_status: 'settlement', payment_type: 'bank_transfer', transaction_time: '2026-10-13 10:00:00', secret: 'SHOULD_NOT_LEAK' }, config };
+                return { status: 200, data: { order_id: 'order/user-1', transaction_status: 'settlement', payment_type: 'bank_transfer', transaction_time: '2026-10-13 10:00:00', secret: 'SHOULD_NOT_LEAK' }, config };
             };
             const result = await request('GET', `/users/${user.id}/subscription-status`, 200);
             assert.equal(result.data.profil_pengguna.id_pengguna, user.id);

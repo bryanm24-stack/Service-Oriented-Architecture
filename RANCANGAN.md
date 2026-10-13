@@ -76,13 +76,13 @@ Kredensial disimpan pada .env yang diabaikan Git; .env.example hanya placeholder
 
 Endpoint /transactions/:id/conversion menggabungkan transaksi dari DB dan kurs dari ExchangeRate-API melalui Axios. Field provider dipilih dan diganti nama menjadi base_currency, target_currency, rate, updated_at; estimated_amount merupakan estimasi tampilan. Key berada pada EXCHANGE_RATE_API_KEY.
 
-Endpoint /users/:id/subscription-status menggabungkan profil DB dengan status Midtrans dari order yang dikonfigurasi untuk user tersebut pada MIDTRANS_ORDER_IDS. Tidak ada order global tetap atau key dummy. Pemetaan environment adalah batasan prototipe, bukan desain penyimpanan order produksi.
+Endpoint /users/:id/subscription-status menggabungkan profil DB dengan status pembayaran order yang dipetakan per user pada MIDTRANS_ORDER_IDS. UserController menangani HTTP/profil, sedangkan src/services/midtrans.js menangani konfigurasi, autentikasi provider, lookup status, pencocokan order_id/transaction_id, dan pemilihan field. MIDTRANS_ENVIRONMENT memilih sandbox/production. Tidak ada order global tetap atau fallback key dummy; order duplikat antaruser ditolak. Pemetaan environment merupakan konfigurasi operator untuk prototipe, belum berupa tabel pembayaran atau bukti kepemilikan otomatis. Endpoint tidak membuat pembayaran atau mengaktifkan langganan.
 
-Timeout menghasilkan 504; network/non-2xx atau payload invalid 502; konfigurasi provider/order belum tersedia 503. Tidak ada fallback kurs atau status pembayaran palsu. Axios menggunakan timeout, AbortSignal, batas ukuran respons, dan tanpa redirect.
+Timeout menghasilkan 504; network/non-2xx atau payload invalid umumnya 502; konfigurasi provider/order belum tersedia 503. Khusus Midtrans, order yang tidak ditemukan menghasilkan 404 dan autentikasi provider ditolak menghasilkan 502; error di JSON pada HTTP 200 juga diperiksa. Tidak ada fallback kurs atau status pembayaran palsu. Axios menggunakan timeout, AbortSignal, batas ukuran respons, dan tanpa redirect.
 
 ## Pengujian
 
-17 tes otomatis lulus dengan database simulasi, termasuk rollback, metode baru, isolasi nested User, agregasi periode/kategori, validasi, dan error API. Koleksi 52 request/128 assertion lulus melalui Newman dengan database simulasi. Dua integrasi provider pada koleksi default menguji kondisi belum dikonfigurasi (503); jalur sukses provider pada tes kode menggunakan adapter simulasi. Belum ada klaim keberhasilan MySQL atau provider asli.
+24 tes otomatis lulus dengan database simulasi, termasuk rollback, metode baru, isolasi nested User, agregasi periode/kategori, validasi, dan error API. Koleksi 52 request/128 assertion lulus melalui Newman dengan database simulasi. Dua integrasi provider pada koleksi default menguji kondisi belum dikonfigurasi (503); jalur sukses provider pada tes kode menggunakan adapter simulasi. Request Midtrans pada jalur HTTP 200 lulus 5 assertion dengan provider simulasi. .env unggahan belum berisi key/pemetaan Midtrans. Belum ada klaim keberhasilan MySQL atau provider asli. Rincian ada di PEMERIKSAAN-MIDTRANS.md.
 
 ## Bukti SQL aktual
 
