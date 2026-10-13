@@ -1,60 +1,18 @@
-const express = require("express");
+const router = require('express').Router();
+const controller = require('../controllers/category');
+const asyncHandler = require('../utils/asyncHandler');
+const methodNotAllowed = require('../middlewares/methodNotAllowed');
 
-const router = express.Router();
+router.route('/')
+    .get(asyncHandler(controller.getCategories))
+    .post(asyncHandler(controller.createCategory))
+    .all(methodNotAllowed('GET', 'POST'));
 
-const methodNotAllowed =
-require("../middlewares/methodNotAllowed");
-
-const asyncHandler =
-require("../utils/asyncHandler");
-
-const {
-createCategory,
-getCategories,
-getCategoryById,
-updateCategory,
-deleteCategory,
-} = require("../controllers/category");
-
-
-// ============================================================
-// /api/v1/categories
-// ============================================================
-
-router
-.route("/")
-.get(
-    asyncHandler(getCategories)
-)
-.post(
-    asyncHandler(createCategory)
-)
-.all(
-    methodNotAllowed("GET", "POST")
-);
-
-
-// ============================================================
-// /api/v1/categories/:id
-// ============================================================
-
-router
-.route("/:id")
-.get(
-    asyncHandler(getCategoryById)
-)
-.patch(
-    asyncHandler(updateCategory)
-)
-.delete(
-    asyncHandler(deleteCategory)
-)
-.all(
-    methodNotAllowed(
-        "GET",
-        "PATCH",
-        "DELETE"
-    )
-);
+router.route('/:id')
+    .get(asyncHandler(controller.getCategoryById))
+    .put(asyncHandler(controller.replaceCategory))
+    .patch(asyncHandler(controller.updateCategory))
+    .delete(asyncHandler(controller.deleteCategory))
+    .all(methodNotAllowed('GET', 'PUT', 'PATCH', 'DELETE'));
 
 module.exports = router;

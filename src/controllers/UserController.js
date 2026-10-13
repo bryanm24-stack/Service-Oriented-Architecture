@@ -122,16 +122,28 @@ const getUserSubscription = async (req, res) => {
         throw httpError(404, "User tidak ditemukan"); 
     }
 
-    const serverKey = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-DUMMY';
+    const serverKey = process.env.MIDTRANS_SERVER_KEY?.trim();
+    let orders;
+
+    try {
+        orders = JSON.parse(process.env.MIDTRANS_ORDER_IDS || '{}');
+    } catch {
+        throw httpError(503, 'Pemetaan order Midtrans belum dikonfigurasi dengan benar');
+    }
+
+    const orderId = orders?.[String(id)];
+
+    if (!serverKey || typeof orderId !== 'string' || !orderId.trim()) {
+        throw httpError(503, 'Layanan Midtrans atau order untuk user ini belum dikonfigurasi');
+    }
+
     const authString = Buffer.from(serverKey + ':').toString('base64');
-    // Ubah baris ini (sementara untuk testing):
-const orderId = '5ee64835-fddf-4926-8c28-2e1ed355843f';
 
     // Panggilan axios diwakilkan oleh layanan requestUpstream milik dosen
     // Otomatis menembak error 502 / 504 sesuai timeout
     const response = await requestUpstream({
         method: 'GET',
-        url: `https://api.sandbox.midtrans.com/v2/${orderId}/status`,
+        url: `https://api.sandbox.midtrans.com/v2/${encodeURIComponent(orderId)}/status`,
         headers: {
             'Authorization': `Basic ${authString}`,
             'Accept': 'application/json'

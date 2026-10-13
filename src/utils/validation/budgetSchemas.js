@@ -113,7 +113,17 @@ const budgetListQuery = Joi.object({
         'object.unknown': '{#label} tidak diizinkan'
     });
 
+const budgetPatch = budgetBody
+    .fork(['user_id'], field => field.forbidden())
+    .fork(['month', 'year', 'budget_categories'], field => field.optional())
+    .min(1)
+    .messages({
+        'object.min': 'Body wajib memiliki minimal satu field yang dapat diubah',
+        'any.unknown': '{#label} tidak boleh diubah melalui PATCH'
+    });
+
 module.exports = {
+    budgetPatch,
     budgetBody,
     budgetId,
     budgetListQuery

@@ -96,7 +96,7 @@ test('Budget CRUD, validasi, konflik dan rollback dengan database simulasi', asy
         const updated=await request('PUT',path+'/1',200,{...body,budget_categories:[{category_id:2,allocated_amount:'999.99'}]});
         assert.equal(updated.body.data.categories.length,1); assert.equal(updated.body.data.categories[0].id,2);
         forceUnique=true; await request('POST',path,409,{...body,month:12}); forceUnique=false;
-        assert.equal((await request('PATCH',path+'/1',405,{})).headers.get('allow'),'GET, PUT, DELETE');
+        assert.equal((await request('POST',path+'/1',405,{})).headers.get('allow'),'GET, PUT, PATCH, DELETE');
         assert.equal((await request('DELETE',path,405)).headers.get('allow'),'GET, POST');
         await request('DELETE',path+'/1',204);
         assert(allocations.every(a=>a.budget_id!==1));

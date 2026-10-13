@@ -1,6 +1,7 @@
 const { Op, QueryTypes } = require("sequelize");
+const httpError = require("../utils/httpError");
 const { Transaction, Category, User, sequelize } = require("../models");
-const { parse, idSchema, transactionCreate, transactionPatch, transactionQuery } = require("../utils/validation/resourceSchemas");
+const { parse, idSchema, transactionCreate, transactionPatch, transactionQuery, transactionPut } = require("../utils/validation/resourceSchemas");
 
 const transactionFields = ["id_transaction", "id_category", "id_user", "nominal", "catatan", "createdAt", "updatedAt"];
 const includes = [
@@ -67,7 +68,7 @@ const createTransaction = async (req, res) => {
     });
 };
 
-const listTransactions = async (req, res, forcedMode) => {
+const listTransactions = async (req, res, forcedMode, parentType = "category") => {
     const query = parse(transactionQuery, req.query);
     const { search, sort, limit, offset, minNominal, maxNominal } = query;
 
@@ -78,15 +79,18 @@ const listTransactions = async (req, res, forcedMode) => {
     }
 
     let categoryId;
+    let userId;
 
     if (req.params.id !== undefined) {
-        categoryId = parse(idSchema, req.params.id);
+        const id = parse(idSchema, req.params.id);
+        const parent = parentType === 'user' ? await User.findByPk(id) : await Category.findByPk(id);
 
-        if (!await Category.findByPk(categoryId)) {
-            return res.status(404).json({
-                message: "Category tidak ditemukan"
-            });
+        if (!parent) {
+            return res.status(404).json({ message: parentType === 'user' ? 'User tidak ditemukan' : 'Category tidak ditemukan' });
         }
+
+        if (parentType === 'user') userId = id;
+        else categoryId = id;
     }
 
     const mode = forcedMode || query.mode;
@@ -109,6 +113,11 @@ const listTransactions = async (req, res, forcedMode) => {
             clauses.push("t.id_category = :categoryId");
 
             replacements.categoryId = categoryId;
+        }
+
+        if (userId !== undefined) {
+            clauses.push("t.id_user = :userId");
+            replacements.userId = userId;
         }
 
         if (minNominal !== undefined) {
@@ -165,6 +174,10 @@ const listTransactions = async (req, res, forcedMode) => {
             where.id_category = categoryId;
         }
 
+        if (userId !== undefined) {
+            where.id_user = userId;
+        }
+
         if (minNominal !== undefined || maxNominal !== undefined) {
             where.nominal = {};
 
@@ -208,6 +221,42 @@ const getTransactionsRaw = (req, res) => listTransactions(req, res, "raw");
 
 const getTransactionsByCategory = (req, res) => listTransactions(req, res);
 
+const getTransactionsByUser = (req, res) => listTransactions(req, res, undefined, 'user');
+
+const getTransactionById = async (req, res) => {
+    const transaction = await Transaction.findByPk(parse(idSchema, req.params.id), {
+        attributes: transactionFields,
+        include: includes
+    });
+
+    if (!transaction) {
+        return res.status(404).json({ message: 'Transaction tidak ditemukan' });
+    }
+
+    return res.json({ success: true, data: serialize(transaction) });
+};
+
+const replaceTransaction = async (req, res) => {
+    const id = parse(idSchema, req.params.id);
+    const value = parse(transactionPut, req.body);
+    const result = await sequelize.transaction(async transaction => {
+        const row = await Transaction.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+
+        if (!row) throw httpError(404, 'Transaction tidak ditemukan');
+
+        const user = await User.findByPk(value.id_user, { transaction, lock: transaction.LOCK.UPDATE });
+        const category = await Category.findByPk(value.id_category, { transaction, lock: transaction.LOCK.UPDATE });
+
+        if (!user || !category) throw httpError(404, 'User atau Category tidak ditemukan');
+
+        await row.update(value, { transaction });
+
+        return Transaction.findByPk(id, { attributes: transactionFields, include: includes, transaction });
+    });
+
+    return res.json({ success: true, data: serialize(result) });
+};
+
 const updateTransaction = async (req, res) => {
     const id = parse(idSchema, req.params.id);
     const value = parse(transactionPatch, req.body);
@@ -245,6 +294,9 @@ const deleteTransaction = async (req, res) => {
 };
 
 module.exports = {
+    getTransactionById,
+    replaceTransaction,
+    getTransactionsByUser,
     createTransaction,
     getTransactions,
     getTransactionsORM,

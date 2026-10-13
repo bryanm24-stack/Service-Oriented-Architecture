@@ -449,7 +449,12 @@ const parse = (schema, input) => {
     return value;
 };
 
+const categoryPut = categoryCreate.fork(['icon'], field => field.required());
+const transactionPut = transactionCreate.fork(['catatan'], field => field.required());
+
 module.exports = {
+    categoryPut,
+    transactionPut,
     parse,
     idSchema,
     userCreate,

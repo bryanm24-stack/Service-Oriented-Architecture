@@ -1,7 +1,7 @@
 {
     "name": "soa-minggu6",
     "version": "1.0.0",
-    "description": "Starter Praktikum Minggu 6 - 3rd Party API Axios",
+    "description": "REST API Asisten Keuangan - 30 endpoint",
     "main": "index.js",
     "scripts": {
         "start": "node index.js",

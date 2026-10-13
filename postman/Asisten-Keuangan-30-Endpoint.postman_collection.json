@@ -1,0 +1,1416 @@
+{
+    "info": {
+        "name": "Asisten Keuangan - 30 Endpoint",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "30 endpoint unik, 52 request termasuk skenario gagal. Jalankan Runner berurutan dengan environment yang disediakan. Data percobaan dibuat sendiri dan dibersihkan pada akhir run; User memakai soft delete. API kurs/Midtrans default mengharapkan 503 karena konfigurasi belum diisi; atur expected status 200 hanya jika integrasi sudah dikonfigurasi. Lihat README."
+    },
+    "item": [
+        {
+            "name": "01 - Buat User",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/users",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"User {{runId}}\",\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"Password123!\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "['userId', 'categoryId', 'transactionId', 'budgetId', 'ormResult'].forEach(key => pm.collectionVariables.unset(key));",
+                            "const run = pm.variables.replaceIn('{{$guid}}');",
+                            "pm.collectionVariables.set('runId', run);",
+                            "pm.collectionVariables.set('testEmail', 'runner-' + run + '@example.com');",
+                            "pm.collectionVariables.set('month', new Date().getUTCMonth() + 1);",
+                            "pm.collectionVariables.set('year', new Date().getUTCFullYear());"
+                        ]
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(201));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Location tersedia\", () => pm.expect(pm.response.headers.get(\"Location\")).to.match(/^\\/api\\/v1\\//));",
+                            "if (pm.response.code === 201) pm.collectionVariables.set(\"userId\", pm.response.json().id);",
+                            "else pm.execution.setNextRequest(null);",
+                            "pm.test(\"Password tidak dibocorkan\", () => pm.expect(pm.response.json()).not.to.have.property(\"password\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "02 - Daftar User dengan pencarian",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users?search={{runId}}&sort=name&limit=10&offset=0"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"User ditemukan\", () => pm.expect(pm.response.json().some(x => x.id === Number(pm.collectionVariables.get(\"userId\")))).to.eql(true));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "03 - Detail User",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Password tidak dibocorkan\", () => pm.expect(pm.response.json()).not.to.have.property(\"password\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "04 - PUT User lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"User PUT {{runId}}\",\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"Password123!\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Password tidak dibocorkan\", () => pm.expect(pm.response.json()).not.to.have.property(\"password\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "05 - PATCH User",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"User PATCH {{runId}}\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Nama diperbarui\", () => pm.expect(pm.response.json().name).to.include(\"PATCH\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "06 - Buat Category",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/categories",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Kategori {{runId}}\",\n    \"icon\": \"wallet\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(201));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Location tersedia\", () => pm.expect(pm.response.headers.get(\"Location\")).to.match(/^\\/api\\/v1\\//));",
+                            "if (pm.response.code === 201) pm.collectionVariables.set(\"categoryId\", pm.response.json().data.id);",
+                            "else pm.execution.setNextRequest(null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "07 - Daftar Category",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/categories"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Daftar kategori\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "08 - Detail Category",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "09 - PUT Category lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Kategori PUT {{runId}}\",\n    \"icon\": \"food\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Ikon sesuai\", () => pm.expect(pm.response.json().data.icon).to.eql(\"food\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "10 - PATCH Category",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"icon\": \"transport\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "11 - Buat Transaction",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/transactions",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"id_user\": {{userId}},\n    \"id_category\": {{categoryId}},\n    \"nominal\": \"10000.00\",\n    \"catatan\": \"{{runId}}\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(201));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Location tersedia\", () => pm.expect(pm.response.headers.get(\"Location\")).to.match(/^\\/api\\/v1\\//));",
+                            "if (pm.response.code === 201) pm.collectionVariables.set(\"transactionId\", pm.response.json().data.id_transaction);",
+                            "else pm.execution.setNextRequest(null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "12 - Daftar Transaction ORM filter sort pagination",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions?search={{runId}}&sort=asc&limit=10&offset=0&minNominal=1&maxNominal=50000&mode=orm"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Satu transaksi uji ditemukan\", () => pm.expect(pm.response.json().data).to.have.lengthOf(1));",
+                            "pm.collectionVariables.set('ormResult', JSON.stringify(pm.response.json()));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "13 - Daftar Transaction versi RAW",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions?search={{runId}}&sort=asc&limit=10&offset=0&minNominal=1&maxNominal=50000&mode=raw"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"ORM dan RAW sama\", () => pm.expect(pm.response.json()).to.deep.eql(JSON.parse(pm.collectionVariables.get(\"ormResult\"))));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "14 - Detail Transaction",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Relasi tampil\", () => { pm.expect(pm.response.json().data.user.id).to.eql(Number(pm.collectionVariables.get(\"userId\"))); pm.expect(pm.response.json().data.category.id).to.eql(Number(pm.collectionVariables.get(\"categoryId\"))); });"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "15 - PUT Transaction lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"id_user\": {{userId}},\n    \"id_category\": {{categoryId}},\n    \"nominal\": \"20000.00\",\n    \"catatan\": \"{{runId}}\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "16 - PATCH Transaction",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"nominal\": \"25000.00\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "17 - Transactions per Category",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}/transactions?search={{runId}}&sort=desc&limit=10&offset=0"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Transaksi kategori sesuai\", () => pm.expect(pm.response.json().data).to.have.lengthOf(1));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "18 - Transactions per User",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}/transactions?search={{runId}}&sort=asc&limit=10&offset=0"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Transaksi user sesuai\", () => pm.expect(pm.response.json().data.every(x => x.id_user === Number(pm.collectionVariables.get(\"userId\")))).to.eql(true));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "19 - Konversi kurs - status sesuai konfigurasi API",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}/conversion?currency=USD"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(Number(pm.environment.get(\"conversionExpectedStatus\") || 503)));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "if (pm.response.code === 200) pm.test('Data DB dan kurs tergabung', () => { pm.expect(pm.response.json().data).to.have.property('transaction'); pm.expect(pm.response.json().data.conversion).to.have.property('rate'); });",
+                            "if (pm.response.code === 503) pm.test('API belum dikonfigurasi dilaporkan', () => pm.expect(pm.response.json().msg).to.include('belum dikonfigurasi'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "20 - Status langganan - status sesuai konfigurasi Midtrans",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{subscriptionUserId}}/subscription-status"
+            },
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.variables.set('subscriptionUserId', pm.environment.get('midtransUserId') || pm.collectionVariables.get('userId'));"
+                        ]
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(Number(pm.environment.get(\"subscriptionExpectedStatus\") || 503)));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "if (pm.response.code === 200) pm.test('Profil dan status pembayaran tergabung', () => { pm.expect(pm.response.json().data).to.have.property('profil_pengguna'); pm.expect(pm.response.json().data).to.have.property('info_langganan'); });",
+                            "if (pm.response.code === 503) pm.test('Konfigurasi order belum tersedia', () => pm.expect(pm.response.json().msg).to.include('belum dikonfigurasi'));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "21 - Buat Budget dan pivot",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{userId}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{categoryId}},\n            \"allocated_amount\": \"500000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(201));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Location tersedia\", () => pm.expect(pm.response.headers.get(\"Location\")).to.match(/^\\/api\\/v1\\//));",
+                            "if (pm.response.code === 201) pm.collectionVariables.set(\"budgetId\", pm.response.json().data.budget_id);",
+                            "else pm.execution.setNextRequest(null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "22 - Daftar Budget",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/budgets?user_id={{userId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Budget user tampil\", () => pm.expect(pm.response.json().data).to.have.lengthOf(1));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "23 - Detail Budget dan kolom pivot",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Pivot allocated_amount tampil\", () => pm.expect(Number(pm.response.json().data.categories[0].Budget_categories.allocated_amount)).to.eql(500000));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "24 - Budgets per User",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}/budgets"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Budget milik user\", () => pm.expect(pm.response.json().data.every(x => x.user_id === Number(pm.collectionVariables.get(\"userId\")))).to.eql(true));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "25 - PUT Budget lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{userId}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{categoryId}},\n            \"allocated_amount\": \"750000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "26 - PATCH Budget sebagian",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"budget_categories\": [\n        {\n            \"category_id\": {{categoryId}},\n            \"allocated_amount\": \"800000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "27 - Ringkasan Budget vs pengeluaran",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}/summary"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test('Perhitungan ringkasan benar', () => { const x=pm.response.json().data; pm.expect(x.total_allocated).to.eql('800000.00'); pm.expect(x.total_spent).to.eql('25000.00'); pm.expect(x.total_remaining).to.eql('775000.00'); });"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "28 - User invalid - beberapa field sekaligus",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/users",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"\",\n    \"email\": \"bad\",\n    \"password\": \"x\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Lebih dari satu field dilaporkan\", () => pm.expect(new Set(pm.response.json().errors.map(x => x.field)).size).to.be.greaterThan(1));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "29 - Email User duplikat",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/users",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"User {{runId}}\",\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"Password123!\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(409));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "30 - Budget periode duplikat",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{userId}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{categoryId}},\n            \"allocated_amount\": \"500000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(409));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "31 - Category masih memiliki transaksi",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(409));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "32 - Alokasi Budget nol ditolak",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{userId}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{categoryId}},\n            \"allocated_amount\": \"0\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "33 - PUT Category tidak lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Tidak lengkap\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "34 - PUT Transaction tidak lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"nominal\": 200\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "35 - PUT Budget tidak lengkap",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"month\": 1\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "36 - PATCH Budget tidak boleh memindahkan user",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{userId}}\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "37 - PATCH kosong ditolak",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "38 - Field asing isAdmin ditolak",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"isAdmin\": true,\n    \"name\": \"TIDAK BOLEH TERSIMPAN\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Field asing dilaporkan\", () => pm.expect(pm.response.json().errors.some(x => x.field === \"isAdmin\")).to.eql(true));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "39 - Pastikan field asing tidak tersimpan",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"isAdmin tidak tersimpan dan update ditolak utuh\", () => { const u=pm.response.json(); pm.expect(u).not.to.have.property(\"isAdmin\"); pm.expect(u.name).to.eql(\"User PATCH \" + pm.collectionVariables.get(\"runId\")); });"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "40 - Metode salah menghasilkan Allow",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(405));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);",
+                            "pm.test(\"Header Allow\", () => pm.expect(pm.response.headers.get(\"Allow\")).to.eql(\"GET, POST\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "41 - ID Transaction invalid",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions/abc"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "42 - Summary Budget tidak ada",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/budgets/2147483647/summary"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(404));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "43 - Filter rentang nominal terbalik",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions?minNominal=100&maxNominal=1"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(400));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "44 - Hapus Budget percobaan",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(204));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "45 - Budget sudah dihapus",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/budgets/{{budgetId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(404));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "46 - Hapus Transaction percobaan",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "47 - Transaction sudah dihapus",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/transactions/{{transactionId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(404));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "48 - Hapus Category percobaan",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(204));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "49 - Category sudah dihapus",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/categories/{{categoryId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(404));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "50 - Soft delete User percobaan",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "51 - User sudah soft deleted",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(404));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "52 - Nested User yang sudah dihapus",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/v1/users/{{userId}}/budgets"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"Status sesuai kontrak\", () => pm.response.to.have.status(404));",
+                            "pm.test(\"Respons JSON\", () => pm.response.to.be.json);"
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": []
+}

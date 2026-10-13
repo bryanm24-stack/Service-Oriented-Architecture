@@ -1,5 +1,5 @@
 const { Category, Transaction } = require("../models");
-const { parse, idSchema, categoryCreate, categoryPatch } = require("../utils/validation/resourceSchemas");
+const { parse, idSchema, categoryCreate, categoryPatch, categoryPut } = require("../utils/validation/resourceSchemas");
 
 const createCategory = async (req, res) => {
     const category = await Category.create(parse(categoryCreate, req.body));
@@ -51,6 +51,20 @@ const updateCategory = async (req, res) => {
     });
 };
 
+const replaceCategory = async (req, res) => {
+    const id = parse(idSchema, req.params.id);
+    const value = parse(categoryPut, req.body);
+    const category = await Category.findByPk(id);
+
+    if (!category) {
+        return res.status(404).json({ msg: 'Category tidak ditemukan' });
+    }
+
+    await category.update(value);
+
+    return res.json({ msg: 'Category berhasil diganti', data: category });
+};
+
 const deleteCategory = async (req, res) => {
     const id = parse(idSchema, req.params.id);
     const category = await Category.findByPk(id);
@@ -78,6 +92,7 @@ const deleteCategory = async (req, res) => {
 };
 
 module.exports = {
+    replaceCategory,
     createCategory,
     getCategories,
     getCategoryById,
