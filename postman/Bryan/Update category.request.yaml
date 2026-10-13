@@ -1,0 +1,10 @@
+$kind: http-request
+url: http://localhost:3001/api/v1/categories/1
+method: PATCH
+body:
+  type: json
+  content: |-
+    {
+      "name": "Updated Category"
+    }
+order: 4328053916151937

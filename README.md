@@ -1,3 +1,7 @@
+# Paket terintegrasi Users, Categories, Transactions, dan Budget
+
+Baca [MULAI-DI-SINI.md](MULAI-DI-SINI.md). Jalankan `npm run db:migrate`, lalu `npm start`. SQL aktif adalah `sql/Gabungan.sql`. Dokumentasi materi di bawah tetap dipertahankan.
+
 # SOA Minggu 6 — 3rd Party API dengan Axios
 
 Starter praktikum Mata Kuliah Arsitektur Berbasis Layanan (SOA)
@@ -13,7 +17,7 @@ upstream gagal. Butuh **koneksi internet** untuk endpoint baru ini.
 ```bash
 npm install
 cp .env.example .env        # sesuaikan kredensial MySQL
-npm run db:migrate          # buat database soa_minggu6, tabel, data awal
+npm run db:migrate          # buat database sesuai DB_NAME, tabel, data awal
 npm run dev
 ```
 

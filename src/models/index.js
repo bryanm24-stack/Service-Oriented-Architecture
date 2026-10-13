@@ -1,66 +1,83 @@
-/**
- * DAFTAR SEMUA MODEL
- */
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../databases/connection');
 
-const db = {};
+const User = require('./User');
+const Category = require('./Category');
+const Transaction = require('./Transaction');
+const Budget = require('./Budget');
+const BudgetCategory = require('./Budget_categories');
 
-const {
-  sequelize,
-} = require("../databases/connection");
+const db = {
+    Buku: require('./Buku')(sequelize, DataTypes),
+    Karakter: require('./Karakter')(sequelize, DataTypes),
+    User,
+    Category,
+    Transaction,
+    Budget,
+    BudgetCategory,
+    Budget_categories: BudgetCategory
+};
 
-const Buku = require("./Buku");
-const Karakter = require("./Karakter");
-const Category = require("./Category");
-
-
-// ============================================================
-// DAFTARKAN MODEL
-// ============================================================
-
-db.Buku = Buku(
-  sequelize,
-  sequelize.Sequelize
-);
-
-db.Karakter = Karakter(
-  sequelize,
-  sequelize.Sequelize
-);
-
-db.Category = Category(
-  sequelize,
-  sequelize.Sequelize
-);
-
-
-/*
- * Nanti setelah Dana membuat Transaction:
- *
- * const Transaction = require("./Transaction");
- *
- * db.Transaction = Transaction(
- *   sequelize,
- *   sequelize.Sequelize
- * );
- */
-
-
-// ============================================================
-// JALANKAN SEMUA RELASI
-// ============================================================
-
-for (const key of Object.keys(db)) {
-  if (
-    typeof db[key].associate === "function"
-  ) {
-    db[key].associate(db);
-  }
+// Buku dan Karakter mempertahankan pola factory dari materi.
+for (const model of [db.Buku, db.Karakter]) {
+    if (typeof model.associate === 'function') {
+        model.associate(db);
+    }
 }
 
+// Seluruh model sudah tersedia sebelum relasi dipasang.
 
-// ============================================================
-// INSTANCE SEQUELIZE
-// ============================================================
+User.hasMany(db.Transaction, {
+    foreignKey: "id_user",
+    as: "transactions",
+    onDelete: "RESTRICT",
+});
+
+Category.hasMany(db.Transaction, {
+    foreignKey: "id_category",
+    as: "transactions",
+    onDelete: "RESTRICT",
+});
+
+Transaction.belongsTo(db.Category, {
+    foreignKey: "id_category",
+    as: "category",
+    onDelete: "RESTRICT",
+});
+
+Transaction.belongsTo(db.User, {
+    foreignKey: "id_user",
+    as: "user",
+    onDelete: "RESTRICT",
+});
+
+Budget.belongsTo(db.User, {
+    foreignKey: 'user_id',
+    as: 'user',
+    onDelete: 'RESTRICT'
+});
+
+db.User.hasMany(Budget, {
+    foreignKey: 'user_id',
+    as: 'budgets',
+    onDelete: 'RESTRICT'
+});
+
+Budget.belongsToMany(db.Category, {
+    through: BudgetCategory,
+    foreignKey: 'budget_id',
+    otherKey: 'category_id',
+    as: 'categories',
+    onDelete: 'CASCADE'
+});
+
+db.Category.belongsToMany(Budget, {
+    through: BudgetCategory,
+    foreignKey: 'category_id',
+    otherKey: 'budget_id',
+    as: 'budgets',
+    onDelete: 'RESTRICT'
+});
 
 db.sequelize = sequelize;
 

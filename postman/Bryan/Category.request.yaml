@@ -1,0 +1,14 @@
+$kind: http-request
+description: ""
+url: http://localhost:3001/api/v1/categories
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Makanan\",\r
+
+    \  \"icon\": \"food\"\r
+
+    }"
+order: 1791383248267

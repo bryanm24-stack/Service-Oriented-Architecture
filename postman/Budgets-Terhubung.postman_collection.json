@@ -1,0 +1,290 @@
+{
+    "info": {
+        "name": "Budget Terintegrasi - 5 Endpoint",
+        "description": "Jalankan npm start. Isi user_id dan category_id yang tersedia, pilih periode yang belum dipakai. Runner membuat lalu menghapus Budget percobaan; tidak menghapus User/Category. Jika POST pertama gagal, hentikan Runner agar budget_id lama tidak dipakai.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3001"
+        },
+        {
+            "key": "user_id",
+            "value": "1"
+        },
+        {
+            "key": "category_id",
+            "value": "1"
+        },
+        {
+            "key": "month",
+            "value": "10"
+        },
+        {
+            "key": "year",
+            "value": "2026"
+        },
+        {
+            "key": "budget_id",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "01 - Buat Budget baru",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/v1/budgets",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{user_id}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{category_id}},\n            \"allocated_amount\": \"500000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "prerequest",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.collectionVariables.unset(\"budget_id\");"
+                        ]
+                    }
+                },
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                            "if (pm.response.code === 201) pm.collectionVariables.set(\"budget_id\", pm.response.json().data.budget_id);",
+                            "if (pm.response.code !== 201) pm.execution.setNextRequest(null);"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "02 - Duplikat periode ditolak",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/v1/budgets",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{user_id}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{category_id}},\n            \"allocated_amount\": \"500000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "03 - Daftar Budget user",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/v1/budgets?user_id={{user_id}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Data array\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "04 - Detail dan pivot",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/v1/budgets/{{budget_id}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Pivot tersedia\", () => pm.expect(pm.response.json().data.categories[0].Budget_categories).to.have.property(\"allocated_amount\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "05 - PUT lengkap, ganti alokasi",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/v1/budgets/{{budget_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": {{user_id}},\n    \"month\": {{month}},\n    \"year\": {{year}},\n    \"budget_categories\": [\n        {\n            \"category_id\": {{category_id}},\n            \"allocated_amount\": \"750000.00\"\n        }\n    ]\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                            "pm.test(\"Alokasi diperbarui\", () => pm.expect(Number(pm.response.json().data.categories[0].Budget_categories.allocated_amount)).to.eql(750000));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "06 - PUT tidak lengkap ditolak",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/v1/budgets/{{budget_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\"month\": 5}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "07 - PATCH tidak didukung",
+            "request": {
+                "method": "PATCH",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": "{{base_url}}/api/v1/budgets/{{budget_id}}",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 405\", () => pm.response.to.have.status(405));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "08 - Hapus Budget percobaan",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{base_url}}/api/v1/budgets/{{budget_id}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "09 - Budget sudah dihapus",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/v1/budgets/{{budget_id}}"
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
