@@ -23,7 +23,7 @@ const mapUpstreamError = error => {
     return httpError(500, 'Terjadi kesalahan pada integrasi layanan');
 };
 
-const requestUpstream = async config => {
+const requestUpstream = async (config, errorMapper = mapUpstreamError) => {
     const timeout = getTimeout();
 
     try {
@@ -37,7 +37,7 @@ const requestUpstream = async config => {
         });
     } catch (error) {
         // Jangan mengirim/log error.config: URL provider dapat memuat API key.
-        throw mapUpstreamError(error);
+        throw errorMapper(error);
     }
 };
 

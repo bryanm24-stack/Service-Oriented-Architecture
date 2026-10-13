@@ -1,7 +1,7 @@
 const { hashPassword } = require('../utils/password');
 const { Op, QueryTypes } = require("sequelize");
 const { User, sequelize } = require("../models");
-const { requestUpstream } = require('../services/upstream');
+const { getUserPaymentStatus } = require('../services/midtrans');
 const httpError = require('../utils/httpError');
 const { parse, idSchema, userCreate, userPatch, userQuery } = require("../utils/validation/resourceSchemas");
 
@@ -113,64 +113,25 @@ const getUserByIdRaw = async (req, res) => {
 };
 
 const getUserSubscription = async (req, res) => {
-    // Validasi input ID menggunakan Joi idSchema
     const id = parse(idSchema, req.params.id);
-
-    // Ambil profil dari database (Syarat: gabungkan data lokal dan API luar)
     const user = await User.findByPk(id);
+
     if (!user) {
-        throw httpError(404, "User tidak ditemukan"); 
+        throw httpError(404, 'User tidak ditemukan');
     }
 
-    const serverKey = process.env.MIDTRANS_SERVER_KEY?.trim();
-    let orders;
+    const payment = await getUserPaymentStatus(user.id);
 
-    try {
-        orders = JSON.parse(process.env.MIDTRANS_ORDER_IDS || '{}');
-    } catch {
-        throw httpError(503, 'Pemetaan order Midtrans belum dikonfigurasi dengan benar');
-    }
-
-    const orderId = orders?.[String(id)];
-
-    if (!serverKey || typeof orderId !== 'string' || !orderId.trim()) {
-        throw httpError(503, 'Layanan Midtrans atau order untuk user ini belum dikonfigurasi');
-    }
-
-    const authString = Buffer.from(serverKey + ':').toString('base64');
-
-    // Panggilan axios diwakilkan oleh layanan requestUpstream milik dosen
-    // Otomatis menembak error 502 / 504 sesuai timeout
-    const response = await requestUpstream({
-        method: 'GET',
-        url: `https://api.sandbox.midtrans.com/v2/${encodeURIComponent(orderId)}/status`,
-        headers: {
-            'Authorization': `Basic ${authString}`,
-            'Accept': 'application/json'
+    return res.json({
+        data: {
+            profil_pengguna: {
+                id_pengguna: user.id,
+                nama: user.name,
+                email: user.email
+            },
+            info_langganan: payment
         }
     });
-
-    // Syarat: null-safe dan tidak meneruskan response mentah apa adanya
-    if (!response.data || typeof response.data.transaction_status === 'undefined') {
-        throw httpError(502, 'Respons layanan Midtrans tidak valid');
-    }
-
-    // Mapping field sesuai kontrak buatanmu
-    const hasil = {
-        profil_pengguna: {
-            id_pengguna: user.id,
-            nama: user.name,
-            email: user.email
-        },
-        info_langganan: {
-            status_pembayaran: response.data?.transaction_status ?? 'unknown',
-            metode_pembayaran: response.data?.payment_type ?? 'belum_ada',
-            waktu_transaksi: response.data?.transaction_time ?? null,
-            sumber_data: "Midtrans API"
-        }
-    };
-
-    return res.json({ data: hasil });
 };
 
 module.exports = {
