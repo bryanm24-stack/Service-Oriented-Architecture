@@ -1,22 +1,37 @@
-# Rancangan Asisten Keuangan
+# Rancangan ProjectSOA — kontrak M1
 
-## Domain dan masalah
+Status: **draft kontrak bersama v0.1**, siap ditinjau Kenneth, Bryan, Dana, Rafael. Tidak menyatakan empat anggota sudah menyetujui.
+Sumber awal adalah arsip Service-Oriented-Architecture.zip, disalin sebagai ProjectSOA.
+Fokus M1 adalah baseline, relasi, kontrak API, pembagian PIC dan satu acuan UI. Tidak menambah pembayaran, AI, autentikasi, scheduler, atau migrasi bisnis baru.
 
-Service mengelola pengguna, kategori, transaksi pengeluaran, dan alokasi Budget bulanan. Pengguna dibantu melihat pengeluaran per kategori/user serta membandingkan pengeluaran dengan alokasi. Category digunakan bersama; Budget dimiliki satu User dan dapat memakai banyak Category melalui pivot berisi allocated_amount.
+## 1. Yang sudah berjalan dan yang baru dirancang
 
-Dua consumer: aplikasi web pribadi untuk mencatat pengeluaran dan memantau sisa Budget; aplikasi mobile untuk memasukkan transaksi harian serta melihat perkiraan nilai dalam mata uang lain. Keduanya memanggil kontrak REST yang sama.
+Existing: 30 endpoint, 5 model, CRUD User/Category/pengeluaran/Budget, N:M Budget–Category, summary, konversi kurs, serta pembacaan status order Midtrans.
+Belum ada: login/JWT, pembelian paket token, wallet/ledger, pemanggilan AI, pemasukan, wish/cicilan, recurring, PDF dan koneksi bank.
+Adapter Midtrans existing hanya membaca status order dari pemetaan environment. Ini belum menjadi sistem pembelian atau bukti saldo token.
 
-Service menyimpan data dan relasi lokal, memvalidasi referensi/periode, menerapkan aturan bisnis, dan menghitung ringkasan Budget. API kurs hanya menyediakan kurs, sehingga tidak dapat menggantikan pencatatan pengeluaran, relasi pengguna, dan alokasi anggaran milik aplikasi.
+| Fitur rencana | Aturan awal | PIC utama |
+|---|---|---|
+| Pemasukan | Model Income terpisah; nominal positif, sumber, tanggal; tidak mengubah transaksi lama menjadi pemasukan | Dana |
+| Paket token | TokenPackage berisi jumlah token integer, harga IDR, status aktif dan versi; harga katalog final belum ditentukan | Bryan |
+| Pembelian | Purchase menyimpan snapshot harga/token paket; pemilik dan nominal berasal dari server | Bryan |
+| Wallet / ledger | Satu wallet per user; ledger append-only untuk kredit, debit dan koreksi; saldo tidak diedit dari client | Kenneth |
+| AI usage | Simpan input/output token aktual provider, model, status dan referensi debit; bukan panjang karakter | Dana |
+| Tips gratis | Rekomendasi berbasis aturan tanpa debit wallet; jika memakai AI nanti, biaya tidak diam-diam dibebankan ke user | Dana |
+| Wish / cicilan | Target cash atau rencana cicilan pribadi; bukan pengajuan kredit atau layanan pemberian pinjaman | Rafael |
+| Recurring | Jadwal aktif/jeda, biaya dapat diedit untuk periode berikutnya; histori yang sudah terbentuk tetap | Dana |
+| Laporan | Ringkasan pemasukan/pengeluaran dan PDF sesuai pemilik serta periode yang sama | Rafael |
+| Bank bersyarat | Hanya jika akses API resmi, sandbox, izin pengguna dan lingkup akses tersedia; jika belum, tetap off dan gunakan pencatatan manual | Rafael |
 
-## ERD
+## 2. Relasi existing wajib dipertahankan
 
 ```mermaid
 erDiagram
     users ||--o{ transactions : memiliki
-    categories ||--o{ transactions : mengelompokkan
     users ||--o{ budget : memiliki
+    categories ||--o{ transactions : mengelompokkan
     budget ||--o{ budget_categories : mengalokasikan
-    categories ||--o{ budget_categories : digunakan
+    categories ||--o{ budget_categories : dipakai
     budget_categories {
         int id PK
         int budget_id FK
@@ -25,105 +40,77 @@ erDiagram
     }
 ```
 
-UNIQUE(user_id, month, year) membatasi periode Budget; UNIQUE(budget_id, category_id) membatasi pivot. Semua lima tabel memiliki model Sequelize terpisah yang didaftarkan di src/models/index.js. User menggunakan paranoid:true. Category memiliki setter nama dan virtual formatted_name. Model User/Category/Budget mempunyai validate.
+`Budget.belongsToMany(Category, { through: BudgetCategory })` dan relasi balik tetap.
+BudgetCategory tetap memakai file `src/models/Budget_categories.js`, tabel `budget_categories`, alias ekspor `BudgetCategory` dan alias legacy `Budget_categories`.
+UNIQUE(budget_id, category_id) serta UNIQUE(user_id, month, year) tetap. Alokasi uang berada pada pivot, bukan kolom Category.
 
-## Aturan bisnis
+## 3. Calon relasi baru — belum menjadi model runtime
 
-1. Kategori yang masih dipakai Transactions atau alokasi Budget tidak boleh dihapus: 409, melalui pengecekan transaksi dan FK RESTRICT.
-2. Budget user/bulan/tahun yang sudah ada tidak boleh dibuat lagi atau ditimpa lewat perpindahan periode: 409.
-3. Alokasi Budget wajib lebih dari nol, maksimal dua desimal: 400.
-4. Kategori tidak boleh berulang dalam satu Budget: 400.
-5. Email User yang sudah terdaftar tidak boleh digunakan lagi: 409. Soft-deleted User tetap mempertahankan batas unik email.
-6. PUT wajib lengkap, PATCH tidak boleh kosong, dan field asing ditolak: 400.
+```mermaid
+erDiagram
+    User ||--o{ Purchase : purchases
+    User ||--o{ AIUsage : ai_usages
+    User ||--o{ Wish : wishes
+    User ||--o{ RecurringCost : recurring_costs
+    User ||--o| TokenWallet : token_wallet
+```
 
-## Arsitektur dan validasi
+User.hasMany(Purchase/AIUsage/Wish/RecurringCost) dan pasangan belongsTo memakai FK baru `user_id`.
+User.hasOne(TokenWallet), TokenWallet.belongsTo(User), UNIQUE(token_wallets.user_id).
+Wallet boleh belum ada untuk user lama; dibuat sekali secara transaksional saat fitur diaktifkan. UI menampilkan belum tersedia sampai backfill selesai, bukan mengarang saldo.
 
-routes hanya memasang method/path dan middleware. Controller mengelola alur, model mengelola tabel/relasi. index.js menyusun aplikasi. Input POST/PUT/PATCH memakai Joi dengan abortEarly:false; errors memuat field dan pesan Indonesia. Hanya hasil validasi yang disimpan. Password baru di-hash scrypt dan dikeluarkan dari respons.
+| Model calon / tabel | Field awal penting | Relasi / batas unik |
+|---|---|---|
+| Income / incomes | id, user_id, amount, source, occurred_on, note | User hasMany Income |
+| TokenPackage / token_packages | id, name, token_amount, price_idr, version, is_active | hasMany Purchase; snapshot wajib |
+| Purchase / purchases | id, user_id, token_package_id, order_id, amount, currency, token_amount, status, idempotency_key | UNIQUE(order_id), UNIQUE(user_id,idempotency_key) |
+| TokenWallet / token_wallets | id, user_id, balance_tokens, reserved_tokens | UNIQUE(user_id); saldo tersedia = balance-reserved |
+| TokenLedger / token_ledgers | id, user_id, token_wallet_id, delta_tokens, balance_after, reference_type, reference_id, event_key | UNIQUE(event_key); append-only |
+| AIUsage / ai_usages | id, user_id, model, input_tokens, output_tokens, charged_tokens, status, idempotency_key, provider_usage | UNIQUE(user_id,idempotency_key); referensi debit ledger unik |
+| Wish / wishes | id, user_id, name, target_amount, method, target_date, status | method cash/installment |
+| WishInstallment / wish_installments | id, wish_id, sequence, due_on, amount, transaction_id, status | UNIQUE(wish_id,sequence); pembayaran tercatat sekali |
+| RecurringCost / recurring_costs | id, user_id, category_id, amount, interval_unit, interval_count, next_due_on, status | belongsTo Category |
+| RecurringOccurrence / recurring_occurrences | id, recurring_cost_id, due_on, transaction_id | UNIQUE(recurring_cost_id,due_on) |
 
-Create memakai 201 + Location; data hilang 404; method salah 405 + Allow; konflik 409; input invalid 400. Error tidak memuat SQL, stack trace, atau kredensial. Koneksi DB gagal menghasilkan 503.
+PK resource baru direncanakan INT UNSIGNED. FK ke `users.id` harus INT signed seperti tabel existing.
+Jumlah token memakai integer, tanpa pecahan. Ledger boleh mempunyai delta negatif; balance dan reserved tidak negatif, dan reserved tidak boleh melebihi balance. FK histori uang/token ke User memakai RESTRICT, bukan cascade penghapusan ledger.
+Pilihan BIGINT untuk token harus tetap membatasi JSON integer pada Number.MAX_SAFE_INTEGER; angka di luar batas ditolak, tidak dibulatkan.
 
-## ORM dan raw query
+## 4. Aturan bisnis yang mengikat rancangan
 
-GET /api/v1/transactions default memakai ORM (mode=orm): findAll/include dengan Op.like, Op.gte, Op.lte, sort, limit, offset. ORM dipakai sebagai jalur utama untuk menjaga konsistensi relasi/model. mode=raw menyediakan versi pembanding melalui sequelize.query dengan replacements. Nilai filter/pagination memakai parameter. Arah sort hanya menerima asc/desc; keyword ini dipilih dari daftar terbatas, bukan nilai bebas.
+1. Pembelian pending belum menambah saldo. Callback verified dan status pembayaran sah mengkredit wallet sekali dalam transaksi yang sama dengan ledger dan status Purchase. Redirect browser tidak membuktikan pembayaran.
+2. Request checkout memakai Idempotency-Key per user. Replay mengembalikan Purchase yang sama; payload berbeda pada key sama menghasilkan 409.
+3. AI memakai reservasi saldo, lalu debit usage aktual dan pelepasan sisa. Kegagalan sebelum tagihan melepas reservasi; hasil provider yang belum pasti masuk rekonsiliasi, bukan langsung mengulang debit. Semua perubahan saldo melalui satu service wallet milik Kenneth.
+4. Kontrak tarif awal untuk disetujui: charged_tokens = input_tokens + output_tokens, 1 kredit internal per token provider. Pemetaan usage/model disimpan dengan versi. Input panjang tidak menjamin output panjang; keduanya dihitung terpisah dari usage provider.
+5. Cash pada Wish baru menjadi pengeluaran setelah realisasi dikonfirmasi. Cicilan adalah rencana: payload memakai term_months integer; input tahun pada UI diubah eksplisit menjadi jumlah bulan; angsuran terakhir menyerap selisih pembulatan dua desimal. Bunga/biaya tambahan belum disepakati dan tidak boleh diasumsikan.
+6. Recurring menghasilkan satu occurrence per tanggal jatuh tempo. Edit biaya tidak mengubah histori. Saat merealisasikan recurring/cicilan, tautkan ke satu Transaction untuk mencegah pengeluaran ganda.
+7. Income tetap terpisah dari pengeluaran existing. Laporan saldo uang = pemasukan - pengeluaran, sedangkan saldo token adalah satuan layanan AI yang berbeda.
+8. Semua sumber milik user diperiksa di server berdasarkan JWT terverifikasi. Resource milik orang lain tidak boleh terbaca hanya karena ID-nya diketahui.
 
-Kedua versi mengembalikan kontrak yang sama. Raw memberi kendali SQL namun membutuhkan pemeliharaan JOIN/soft delete secara eksplisit. Ini dua implementasi operasi baca, bukan dua kali penulisan transaksi.
+## 5. Data, migrasi dan kompatibilitas
 
-GET daftar/detail Budget memakai include Category dan through.attributes allocated_amount. Alias kategori pada JSON adalah categories; data pivot ada di Budget_categories. GET daftar Budget memakai satu SELECT JOIN. Summary Budget memakai dua query tetap (include dan agregasi) dan tidak melakukan query per kategori.
+- Prefix API tetap `/api/v1`. Kontrak terperinci ada di [KONTRAK_API.md](docs/KONTRAK_API.md).
+- Uang baru: DECIMAL(15,2), currency IDR, JSON berupa string desimal dua angka. DECIMAL(10,2) pada alokasi lama dipertahankan sampai ada migrasi perluasan tersendiri.
+- Nama kolom lama tidak diganti: `id_user` pada transactions dan `user_id` pada budget tetap. DTO baru memakai `user_id` yang diisi server.
+- Tanggal bisnis baru: YYYY-MM-DD dalam Asia/Jakarta. Timestamp API: ISO 8601 UTC. Backfill tanggal transaksi lama menunggu audit zona waktu DB, tidak ditebak.
+- Migrasi berikutnya harus additive, bernomor dan dicatat sekali. Tambah tabel/kolom nullable, backfill terukur, baru constraint. Tidak memakai DROP/TRUNCATE/reset seed/sync(force:true).
+- `scripts/migrate.js` existing adalah bootstrap CREATE IF NOT EXISTS, belum runner migrasi berversi dan belum mengubah tabel lama. Runner upgrade dan backup/restore uji adalah pekerjaan Kenneth.
+- Data lama tidak mendapat saldo token hadiah tanpa keputusan tim; baseline M1 tidak menjalankan SQL apa pun ke DB pengguna.
 
-## Rancangan akses — belum diimplementasikan
+## 6. Satu acuan UI dan perubahan kontrak
 
-JWT tidak diwajibkan soal dan belum diterapkan. Endpoint aktual tetap dapat dipanggil tanpa autentikasi. Matriks di bawah adalah rancangan, bukan perilaku runtime.
+[KONTRAK_UI.md](docs/KONTRAK_UI.md), [wireframe](frontend/wireframes.html), dan [tokens.css](frontend/src/styles/tokens.css) adalah sumber bersama.
+Setiap usulan perubahan field/relasi/response/UI shell masuk dokumen ini dan kontrak terkait dalam PR yang sama. PIC menulis alasan, dampak endpoint/Postman/migrasi/UI, reviewer menyetujui sebelum merge.
+Endpoint existing dan planned dibedakan; nama endpoint rencana tidak berarti endpoint sudah aktif.
 
-| Resource/path | Admin | Pengguna terautentikasi | Tamu |
-|---|---|---|---|
-| /users | GET semua, POST | Tidak | POST registrasi saja |
-| /users/:id | GET/PUT/PATCH/DELETE semua | Akun sendiri | Tidak |
-| /users/:id/transactions | GET semua | Data sendiri | Tidak |
-| /users/:id/budgets | GET semua | Data sendiri | Tidak |
-| /users/:id/subscription-status | GET semua | Data sendiri | Tidak |
-| /categories dan /categories/:id | Semua method terdaftar | GET | Tidak |
-| /categories/:id/transactions | GET semua | GET transaksi sendiri | Tidak |
-| /transactions dan /transactions/:id | Semua method terdaftar | CRUD transaksi sendiri | Tidak |
-| /transactions/:id/conversion | GET semua | GET transaksi sendiri | Tidak |
-| /budgets dan /budgets/:id | Semua method terdaftar | CRUD Budget sendiri | Tidak |
-| /budgets/:id/summary | GET semua | GET Budget sendiri | Tidak |
+## 7. Tinjauan tim yang masih diperlukan
 
-Admin menjaga data kategori dan integritas pengelolaan. Pengguna dilindungi melalui pembatasan kepemilikan data; implementasi selanjutnya wajib mengambil identitas dari sesi terverifikasi, bukan body. Tamu hanya diberi registrasi dalam rancangan agar data keuangan tidak terbuka.
+| Anggota | Bagian yang diperiksa | Status |
+|---|---|---|
+| Kenneth | ERD, N:M, migrasi, wallet, tokens UI | Belum ditinjau |
+| Bryan | Auth, pembelian, ownership, login/register | Belum ditinjau |
+| Dana | Income, AI usage, recurring, formulir | Belum ditinjau |
+| Rafael | 30 endpoint, laporan/wish, UI dashboard, regression | Belum ditinjau |
 
-Kredensial disimpan pada .env yang diabaikan Git; .env.example hanya placeholder. Saat dipasang di cloud, gunakan environment secret/secret manager, pisahkan development/production, batasi hak akun database, rotasi key, dan hindari memasukkan rahasia ke log atau image deployment. Pemeriksaan historis seluruh commit tidak termasuk paket ini.
-
-## Integrasi API
-
-Endpoint /transactions/:id/conversion menggabungkan transaksi dari DB dan kurs dari ExchangeRate-API melalui Axios. Field provider dipilih dan diganti nama menjadi base_currency, target_currency, rate, updated_at; estimated_amount merupakan estimasi tampilan. Key berada pada EXCHANGE_RATE_API_KEY.
-
-Endpoint /users/:id/subscription-status menggabungkan profil DB dengan status pembayaran order yang dipetakan per user pada MIDTRANS_ORDER_IDS. UserController menangani HTTP/profil, sedangkan src/services/midtrans.js menangani konfigurasi, autentikasi provider, lookup status, pencocokan order_id/transaction_id, dan pemilihan field. MIDTRANS_ENVIRONMENT memilih sandbox/production. Tidak ada order global tetap atau fallback key dummy; order duplikat antaruser ditolak. Pemetaan environment merupakan konfigurasi operator untuk prototipe, belum berupa tabel pembayaran atau bukti kepemilikan otomatis. Endpoint tidak membuat pembayaran atau mengaktifkan langganan.
-
-Timeout menghasilkan 504; network/non-2xx atau payload invalid umumnya 502; konfigurasi provider/order belum tersedia 503. Khusus Midtrans, order yang tidak ditemukan menghasilkan 404 dan autentikasi provider ditolak menghasilkan 502; error di JSON pada HTTP 200 juga diperiksa. Tidak ada fallback kurs atau status pembayaran palsu. Axios menggunakan timeout, AbortSignal, batas ukuran respons, dan tanpa redirect.
-
-## Pengujian
-
-24 tes otomatis lulus dengan database simulasi, termasuk rollback, metode baru, isolasi nested User, agregasi periode/kategori, validasi, dan error API. Koleksi 52 request/128 assertion lulus melalui Newman dengan database simulasi. Dua integrasi provider pada koleksi default menguji kondisi belum dikonfigurasi (503); jalur sukses provider pada tes kode menggunakan adapter simulasi. Request Midtrans pada jalur HTTP 200 lulus 5 assertion dengan provider simulasi. .env unggahan belum berisi key/pemetaan Midtrans. Belum ada klaim keberhasilan MySQL atau provider asli. Rincian ada di PEMERIKSAAN-MIDTRANS.md.
-
-## Bukti SQL aktual
-
-Jalankan node scripts/bukti-budget-join.js pada MySQL aktif dengan Budget dan kategori tersedia. Skrip memasukkan SQL aktual ke bagian berpenanda otomatis di bawah setelah berhasil. Tanpa bagian tersebut, bukti aktual belum direkam. Log tes simulasi tidak digunakan sebagai bukti.
-
-## Daftar endpoint
-
-| No | Method | Path | Fungsi | Sukses | Gagal |
-|---|---|---|---|---|---|
-| 1 | GET | `/api/v1/users` | Daftar user aktif; pencarian, sort, pagination | 200 | 400, 404, 405, 503, 500 |
-| 2 | POST | `/api/v1/users` | Buat user | 201 | 400, 404, 405, 409, 503, 500 |
-| 3 | GET | `/api/v1/users/:id/transactions` | Transaksi milik user | 200 | 400, 404, 405, 503, 500 |
-| 4 | GET | `/api/v1/users/:id/budgets` | Budget milik user | 200 | 400, 404, 405, 503, 500 |
-| 5 | GET | `/api/v1/users/:id/subscription-status` | Status pembayaran Midtrans untuk order user | 200 | 400, 404, 405, 502, 503, 504, 500 |
-| 6 | GET | `/api/v1/users/:id` | Detail user | 200 | 400, 404, 405, 503, 500 |
-| 7 | PUT | `/api/v1/users/:id` | Ganti lengkap user | 200 | 400, 404, 405, 409, 503, 500 |
-| 8 | PATCH | `/api/v1/users/:id` | Ubah sebagian user | 200 | 400, 404, 405, 409, 503, 500 |
-| 9 | DELETE | `/api/v1/users/:id` | Soft delete user | 200 | 400, 404, 405, 409, 503, 500 |
-| 10 | GET | `/api/v1/categories` | Daftar kategori | 200 | 400, 404, 405, 503, 500 |
-| 11 | POST | `/api/v1/categories` | Buat kategori | 201 | 400, 404, 405, 409, 503, 500 |
-| 12 | GET | `/api/v1/categories/:id` | Detail kategori | 200 | 400, 404, 405, 503, 500 |
-| 13 | PUT | `/api/v1/categories/:id` | Ganti nama dan ikon kategori | 200 | 400, 404, 405, 409, 503, 500 |
-| 14 | PATCH | `/api/v1/categories/:id` | Ubah sebagian kategori | 200 | 400, 404, 405, 409, 503, 500 |
-| 15 | DELETE | `/api/v1/categories/:id` | Hapus kategori jika tidak dipakai | 204 | 400, 404, 405, 409, 503, 500 |
-| 16 | GET | `/api/v1/transactions` | Daftar transaksi ORM/raw; filter, sort, pagination | 200 | 400, 404, 405, 503, 500 |
-| 17 | POST | `/api/v1/transactions` | Buat transaksi | 201 | 400, 404, 405, 409, 503, 500 |
-| 18 | GET | `/api/v1/transactions/:id/conversion` | Gabungkan transaksi dan kurs API | 200 | 400, 404, 405, 502, 503, 504, 500 |
-| 19 | GET | `/api/v1/categories/:id/transactions` | Transaksi kategori | 200 | 400, 404, 405, 503, 500 |
-| 20 | GET | `/api/v1/transactions/:id` | Detail transaksi dan relasi | 200 | 400, 404, 405, 503, 500 |
-| 21 | PUT | `/api/v1/transactions/:id` | Ganti lengkap transaksi | 200 | 400, 404, 405, 409, 503, 500 |
-| 22 | PATCH | `/api/v1/transactions/:id` | Ubah nominal/catatan | 200 | 400, 404, 405, 409, 503, 500 |
-| 23 | DELETE | `/api/v1/transactions/:id` | Hapus transaksi | 200 | 400, 404, 405, 409, 503, 500 |
-| 24 | GET | `/api/v1/budgets` | Daftar Budget dengan kategori/pivot | 200 | 400, 404, 405, 503, 500 |
-| 25 | POST | `/api/v1/budgets` | Buat Budget dan alokasi | 201 | 400, 404, 405, 409, 503, 500 |
-| 26 | GET | `/api/v1/budgets/:id/summary` | Ringkasan alokasi, pengeluaran, dan sisa | 200 | 400, 404, 405, 503, 500 |
-| 27 | GET | `/api/v1/budgets/:id` | Detail Budget dan pivot | 200 | 400, 404, 405, 503, 500 |
-| 28 | PUT | `/api/v1/budgets/:id` | Ganti lengkap Budget dan alokasi | 200 | 400, 404, 405, 409, 503, 500 |
-| 29 | PATCH | `/api/v1/budgets/:id` | Ubah periode atau daftar alokasi | 200 | 400, 404, 405, 409, 503, 500 |
-| 30 | DELETE | `/api/v1/budgets/:id` | Hapus Budget dan pivot | 204 | 400, 404, 405, 409, 503, 500 |
-
-
-
-//2
-
+Harga katalog, provider/model AI, biaya cicilan, serta akses bank belum final. Rancangan boleh dirinci pada milestone berikutnya; keputusan yang mengubah kontrak tidak dibuat diam-diam oleh satu anggota.
+Referensi teknis: [Sequelize M:N](https://sequelize.org/docs/v6/advanced-association-concepts/advanced-many-to-many/) dan [Midtrans notification](https://docs.midtrans.com/docs/https-notification-webhooks). Tidak ada integrasi baru pada M1.

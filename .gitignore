@@ -13,3 +13,19 @@ dosen/
 !.env.example
 node_modules/
 *.log
+
+# Milestone contract workspace: never commit credentials or generated data.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+*.sqlite
+*.db
+coverage/
+frontend/dist/
+frontend/node_modules/
