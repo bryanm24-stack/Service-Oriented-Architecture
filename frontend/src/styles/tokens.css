@@ -9,6 +9,12 @@
   --color-success: #15803d;
   --color-warning: #b45309;
   --color-danger: #b91c1c;
+  --color-primary-soft: #f0fdfa;
+  --color-code-background: #e2e8f0;
+  --color-sidebar-text: #e2e8f0;
+  --color-sidebar-muted: #b7c3d4;
+  --color-sidebar-hover: #1e293b;
+  --shadow-panel: 0 4px 16px rgb(15 23 42 / 4%);
   --font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-body: 16px;
   --font-label: 14px;

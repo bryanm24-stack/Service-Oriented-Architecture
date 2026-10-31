@@ -11,7 +11,7 @@ Gunakan bundle agar keempat anggota mendapat commit/tag/branch yang sama:
 ```bash
 git clone -b chore/m1-contract ProjectSOA-M1.bundle ProjectSOA-kerja
 cd ProjectSOA-kerja
-git log --oneline --decorate -2
+git log --oneline --decorate -3
 git show baseline/projectsoa-v1.0.0:package.json
 ```
 

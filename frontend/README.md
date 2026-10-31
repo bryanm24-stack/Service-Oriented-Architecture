@@ -35,4 +35,4 @@ Pilihan awal: React + Vite + TypeScript. Instalasi dan file app dilakukan setela
 Feature boleh mengimpor components/lib/types, bukan menyalin AppShell atau mengimpor internal feature lain.
 Semua URL backend melewati satu baseURL: origin + /api/v1. Origin adalah konfigurasi publik; key Midtrans/AI/Bank tidak boleh memakai variabel frontend VITE_*.
 DTO legacy: preserve id_transaction/budget_id dan response existing, lalu normalisasi di adapter. DTO baru memakai kontrak docs/KONTRAK_API.md.
-Wireframe tidak memiliki submit aktif atau koneksi bank/AI. Klik label navigasi hanya untuk berpindah contoh.
+Wireframe tidak memiliki submit aktif atau koneksi bank/AI. Tautan Login/Register/Dashboard/Pengeluaran hanya berpindah contoh; menu lainnya masih berupa label rancangan. Menu mobile memakai details/summary tanpa JavaScript. HTML diindentasi 2 spasi, CSS dibagi per komponen dan breakpoint. Ikon SVG lokal dapat dipakai ulang; tidak ada font atau asset CDN.

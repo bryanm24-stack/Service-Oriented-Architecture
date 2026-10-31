@@ -1,6 +1,6 @@
 # Verifikasi M1
 
-Pemeriksaan dilakukan pada 30 Oktober 2026 dengan Node.js 24.22.1.
+Pemeriksaan baseline dilakukan pada 30 Oktober 2026 dengan Node.js 24.22.1. Perapian HTML/CSS dan pemeriksaan ulang UI dilakukan pada 31 Oktober 2026; pengujian backend di bawah adalah hasil baseline, karena kode bisnis tidak berubah.
 
 | Pemeriksaan | Hasil |
 |---|---|
@@ -9,8 +9,9 @@ Pemeriksaan dilakukan pada 30 Oktober 2026 dengan Node.js 24.22.1.
 | Relasi N:M | Model BudgetCategory dan relasi Budget/Category existing dipertahankan; regression relasi lulus |
 | Perubahan source setelah baseline | Tidak ada perubahan pada src/, sql/, scripts/, entry atau package/dependency |
 | Wireframe | Empat layar statis, diperiksa secara visual di Chromium headless |
-| Responsif | Desktop 1440px, tablet 820px dan mobile 375px: tidak ada overflow halaman; tabel bergeser dalam container |
-| Label input / asset | Seluruh input berlabel; CSS tokens termuat; tidak ada page error pada tiga ukuran |
+| Responsif | Lebar 1440, 1024, 820, 375 dan 320px: tidak ada overflow halaman; tabel bergeser dalam container |
+| Label input / asset | Seluruh input/select berlabel, ID unik, tautan internal valid, kontrol minimal 44px, CSS tokens termuat; tidak ada page error/asset gagal pada lima ukuran |
+| Interaksi statis | Menu mobile buka/tutup dan tautan contoh bekerja; skip-link keyboard dan reduced motion diperiksa; tidak ada script/request API |
 | Secret pada tracked file | .env/private key tidak diikutkan; template credential kosong; fixture provider sintetis |
 
 Tes memakai database dan adapter provider simulasi. Tidak menguji MySQL atau Midtrans asli, tidak menjalankan migrasi pengguna, tidak mengimplementasikan login/JWT atau layanan AI.

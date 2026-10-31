@@ -35,6 +35,9 @@ Topbar: nama halaman, periode yang relevan, saldo token dari server, menu akun/l
 | primary / hover | #0F766E / #115E59, tombol dan tautan utama |
 | ink / muted | #0F172A / #475569 |
 | background / surface / border | #F8FAFC / #FFFFFF / #CBD5E1 |
+| primary-soft / code-background | #F0FDFA / #E2E8F0, latar ikon dan anotasi |
+| sidebar text / muted / hover | #E2E8F0 / #B7C3D4 / #1E293B |
+| shadow-panel | 0 4px 16px rgb(15 23 42 / 4%), bayangan tipis bingkai wireframe |
 | success / warning / danger | #15803D / #B45309 / #B91C1C; selalu disertai teks |
 | font | system-ui, -apple-system, Segoe UI, sans-serif; tanpa ketergantungan CDN |
 | ukuran | body 16px, label 14px, caption 12px, h1 32px, h2 24px, angka ringkasan 28px |
@@ -52,7 +55,7 @@ Perubahan komponen bersama direview Kenneth dan satu pemakai komponen tersebut. 
 ## Responsif dan perilaku
 
 - Mobile <768px: header dengan tombol menu, drawer satu Sidebar yang sama, satu kolom, padding 16px. Form login/register max-width 440px.
-- Tablet 768–1023px: sidebar ringkas 72px dengan accessible label; form 1–2 kolom sesuai ruang.
+- Tablet 768–1023px: sidebar ringkas 72px memakai ikon dengan accessible label dan title; teks menu tidak dipecah per huruf. Form 1–2 kolom sesuai ruang.
 - Desktop >=1024px: sidebar 240px, content max-width 1200px, padding 24–32px; form utama max-width 720px.
 - Tabel berada pada container overflow-x:auto; halaman tidak melebar. Kolom penting tetap terbaca. Input tidak terpotong pada layar 375px.
 - Setiap layar data mempunyai loading, kosong, berhasil dan gagal. Jika bank belum tersedia, tampil alasan dan pencatatan manual; jangan menampilkan status tersambung palsu.
@@ -60,6 +63,8 @@ Perubahan komponen bersama direview Kenneth dan satu pemakai komponen tersebut. 
 - Format rupiah hanya di tampilan; payload uang adalah string dua desimal, token adalah integer. Field user_id/id_user tidak menjadi input yang bisa dipilih pengguna biasa.
 - Dashboard menampilkan periode sumber dan status data. Nilai contoh wireframe harus diberi label ilustrasi dan tidak dianggap saldo API.
 - Keyboard: label terhubung ke input, focus ring jelas, drawer/dialog dapat ditutup Esc dan mengembalikan fokus. Warna tidak menjadi satu-satunya tanda error.
+
+Wireframe HTML/CSS bekerja offline, memakai ikon SVG lokal dan satu stylesheet bersama. Menu mobile pada wireframe memakai details/summary yang dapat dibuka/ditutup dengan keyboard; drawer aplikasi beserta perilaku Esc masih menjadi pekerjaan implementasi. Hanya tautan ke empat contoh dan form yang aktif; submit, filter, edit/hapus dan integrasi API belum berfungsi. Catatan teknis endpoint berada di luar bingkai layar.
 
 ## Checklist persetujuan UI
 
