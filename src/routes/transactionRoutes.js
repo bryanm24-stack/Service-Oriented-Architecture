@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const controller = require('../controllers/transactionControllers');
+const controller = require('./controllers/transactionControllers');
 const { convertTransaction } = require('../controllers/transactionConversion');
 const asyncHandler = require('../utils/asyncHandler');
 const methodNotAllowed = require('../middlewares/methodNotAllowed');
