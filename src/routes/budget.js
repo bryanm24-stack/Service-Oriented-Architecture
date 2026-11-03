@@ -1,23 +1,23 @@
-const express = require("express");
-const router = express.Router();
-const methodNotAllowed = require("../middlewares/methodNotAllowed");
-const asyncHandler = require("../utils/asyncHandler");
+const router = require('express').Router();
+const controller = require('../controllers/budget');
+const { getBudgetSummary } = require('../controllers/budgetSummary');
+const asyncHandler = require('../utils/asyncHandler');
+const methodNotAllowed = require('../middlewares/methodNotAllowed');
 
-const budgetController = require("../controllers/budget");
+router.route('/')
+    .get(asyncHandler(controller.getAllBudgets))
+    .post(asyncHandler(controller.createBudget))
+    .all(methodNotAllowed('GET', 'POST'));
 
-const routePrefix = "/api/v1/budgets";
-router
-  .route(routePrefix)
-  .get(asyncHandler(budgetController.getAllBudgets))     // GET    /api/v1/budgets
-  .post(asyncHandler(budgetController.createBudget))    // POST   /api/v1/budgets
-  .all(methodNotAllowed("GET", "POST"));
+router.route('/:id/summary')
+    .get(asyncHandler(getBudgetSummary))
+    .all(methodNotAllowed('GET'));
 
-router
-  .route(`${routePrefix}/:id`)
-  .get(asyncHandler(budgetController.getBudgetById))
-  .put(asyncHandler(budgetController.updateBudget))
-  .patch(asyncHandler(budgetController.updateBudget))
-  .delete(asyncHandler(budgetController.deleteBudget))
-  .all(methodNotAllowed("GET", "PUT", "PATCH", "DELETE"));
+router.route('/:id')
+    .get(asyncHandler(controller.getBudgetById))
+    .put(asyncHandler(controller.updateBudget))
+    .patch(asyncHandler(controller.patchBudget))
+    .delete(asyncHandler(controller.deleteBudget))
+    .all(methodNotAllowed('GET', 'PUT', 'PATCH', 'DELETE'));
 
 module.exports = router;

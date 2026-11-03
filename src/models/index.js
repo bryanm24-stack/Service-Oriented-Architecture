@@ -1,37 +1,13 @@
-/**
- * DAFTAR MODEL — MINGGU 4
- * =======================
- *
- * Satu tempat yang membangun semua model terhadap koneksi yang sama,
- * lalu MENYALAKAN semua relasi.
- *
- * Kenapa dua langkah (bangun dulu, relasi belakangan)?
- *
- * `static associate(models)` di dalam model merujuk ke model LAIN lewat
- * nama — Buku.hasMany(models.Karakter, ...). Kalau relasi dinyatakan
- * langsung saat model masih dibangun satu per satu, ada kemungkinan
- * model yang dirujuk belum ada -> "Cannot read property 'Karakter' of
- * undefined" — error yang membingungkan padahal penyebabnya cuma urutan.
- *
- * Maka: bangun SEMUA model dulu, baru jalankan SEMUA associate().
- * Pola ini disalin dari struktur model standar Sequelize (yang juga
- * dipakai minggu referensi), jadi kalian akan menemukannya lagi nanti.
- *
- * Kalau kalian menambah model baru (Latihan 6: Penulis), langkahnya:
- *   1. buat src/models/Penulis.js
- *   2. require + daftarkan di objek `db` di bawah
- *   3. selesai — associate() model lain bisa langsung merujuknya.
- */
-const db = {};
+const { sequelize } = require('../databases/connection');
 
 const User = require('./User');
 const Category = require('./Category');
 const Transaction = require('./Transaction');
 const Budget = require('./Budget');
 const BudgetCategory = require('./Budget_categories');
-const ApiLog = require('./api/ApiLog');
-const ApiTier = require('./api/ApiTier');
 const ApiClient = require('./api/ApiClient');
+const ApiTier = require('./api/ApiTier');
+const ApiLog = require('./api/ApiLog');
 
 const db = {
     User,
@@ -40,54 +16,97 @@ const db = {
     Budget,
     BudgetCategory,
     Budget_categories: BudgetCategory,
-    ApiLog,
-    ApiTier,
     ApiClient,
+    ApiTier,
+    ApiLog
 };
 
-db.Buku = Buku(sequelize, sequelize.Sequelize);
-db.Karakter = Karakter(sequelize, sequelize.Sequelize);
+// Seluruh model sudah tersedia sebelum relasi dipasang.
 
-// Relasi dinyatakan SETELAH semua model ada. Urutan di objek `db`
-// tidak penting; yang penting semua sudah terdaftar di baris atas.
-for (const key of Object.keys(db)) {
-  if (typeof db[key].associate === "function") {
-    db[key].associate(db);
-  }
-}
-
-db.User.hasMany(db.ApiClient, {
-    foreignKey: 'user_id',
-    as: 'api_clients',
-    onDelete: 'RESTRICT'
+User.hasMany(db.Transaction, {
+    foreignKey: "id_user",
+    as: "transactions",
+    onDelete: "RESTRICT",
 });
 
-ApiClient.belongsTo(db.User, {
+Category.hasMany(db.Transaction, {
+    foreignKey: "id_category",
+    as: "transactions",
+    onDelete: "RESTRICT",
+});
+
+Transaction.belongsTo(db.Category, {
+    foreignKey: "id_category",
+    as: "category",
+    onDelete: "RESTRICT",
+});
+
+Transaction.belongsTo(db.User, {
+    foreignKey: "id_user",
+    as: "user",
+    onDelete: "RESTRICT",
+});
+
+Budget.belongsTo(db.User, {
     foreignKey: 'user_id',
     as: 'user',
     onDelete: 'RESTRICT'
 });
 
-ApiClient.belongsTo(db.ApiTier, {
-    foreignKey: 'api_tier_id',
-    as: 'api_tier',
+db.User.hasMany(Budget, {
+    foreignKey: 'user_id',
+    as: 'budgets',
     onDelete: 'RESTRICT'
 });
-ApiTier.hasMany(db.ApiClient, {
+
+Budget.belongsToMany(db.Category, {
+    through: BudgetCategory,
+    foreignKey: 'budget_id',
+    otherKey: 'category_id',
+    as: 'categories',
+    onDelete: 'CASCADE'
+});
+
+db.Category.belongsToMany(Budget, {
+    through: BudgetCategory,
+    foreignKey: 'category_id',
+    otherKey: 'budget_id',
+    as: 'budgets',
+    onDelete: 'RESTRICT'
+});
+
+// Model API dari Octavius memakai instance Sequelize dan User yang sama.
+User.hasMany(ApiClient, {
+    foreignKey: 'user_id',
+    as: 'api_clients',
+    onDelete: 'RESTRICT'
+});
+ApiClient.belongsTo(User, {
+    foreignKey: 'user_id',
+    as: 'user',
+    onDelete: 'RESTRICT'
+});
+ApiTier.hasMany(ApiClient, {
     foreignKey: 'api_tier_id',
     as: 'api_clients',
     onDelete: 'RESTRICT'
 });
-ApiClient.hasMany(db.ApiLog, {
+ApiClient.belongsTo(ApiTier, {
+    foreignKey: 'api_tier_id',
+    as: 'api_tier',
+    onDelete: 'RESTRICT'
+});
+ApiClient.hasMany(ApiLog, {
     foreignKey: 'api_client_id',
     as: 'api_logs',
     onDelete: 'RESTRICT'
 });
-ApiLog.belongsTo(db.ApiClient, {
+ApiLog.belongsTo(ApiClient, {
     foreignKey: 'api_client_id',
     as: 'api_client',
     onDelete: 'RESTRICT'
 });
 
 db.sequelize = sequelize;
+
 module.exports = db;

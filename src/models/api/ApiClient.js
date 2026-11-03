@@ -8,7 +8,8 @@ const ApiClient = sequelize.define('ApiClient', {
         primaryKey: true
     },
     user_id: {
-        type: DataTypes.INTEGER.UNSIGNED,
+        // users.id existing bertipe INT signed, bukan INT UNSIGNED.
+        type: DataTypes.INTEGER,
         allowNull: false
     },
     api_tier_id: {

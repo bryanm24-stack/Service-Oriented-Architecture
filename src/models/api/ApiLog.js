@@ -31,11 +31,12 @@ const ApiLog = sequelize.define('ApiLog', {
 }, {
     tableName: 'api_log',
     timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
     indexes: [
         {
-            name: 'uq_name',
-            unique: true,
-            fields: ['name']
+            name: 'idx_api_log_client_created',
+            fields: ['api_client_id', 'created_at']
         }
     ]
 });
