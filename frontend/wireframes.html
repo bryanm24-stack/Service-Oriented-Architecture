@@ -1605,153 +1605,368 @@
           </div>
         </div>
       </section>
-      
-      <section
-        id="sidebar"
-        class="sheet"
-        aria-labelledby="sidebar-title"
-      >
+      <section id="dashboard" class="sheet" aria-labelledby="dashboard-title">
         <div class="sheet-title">
-          <h2 id="sidebar-title">05 · Navigasi Sidebar</h2>
-          <span class="spec">Rafael · Komponen bersama</span>
+          <h2 id="dashboard-title">05 · Error Page</h2>
+          <span class="spec">Rafael</span>
         </div>
-        
+
         <div class="screen">
           <div class="shell">
-            <nav class="navbar" aria-label="Navigasi utama">
-              <a
-                class="nav-item"
-                href="#home"
-                aria-label="Home — rancangan halaman"
-                title="Home — rancangan halaman"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-home"></use>
-                </svg>
-                <span class="nav-text">Home</span>
-              </a>
-              <a
-                class="nav-item"
-                href="#dashboard"
-                aria-label="Dashboard"
-                title="Dashboard"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-dashboard"></use>
-                </svg>
-                <span class="nav-text">Dashboard</span>
-              </a>
-              <a
-                class="nav-item active"
-                href="#transactions"
-                aria-label="Pengeluaran"
-                title="Pengeluaran"
-                aria-current="page"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-expense"></use>
-                </svg>
-                <span class="nav-text">Pengeluaran</span>
-              </a>
-              <a
-                class="nav-item"
-                href="#income"
-                aria-label="Pemasukan — rancangan halaman"
-                title="Pemasukan — rancangan halaman"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-income"></use>
-                </svg>
-                <span class="nav-text">Pemasukan</span>
-              </a>
-              <a
-                class="nav-item"
-                href="#budget"
-                aria-label="Budget — rancangan halaman"
-                title="Budget — rancangan halaman"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-budget"></use>
-                </svg>
-                <span class="nav-text">Budget</span>
-              </a>
-              <a
-                class="nav-item"
-                href="#wish"
-                aria-label="Wish — rancangan halaman"
-                title="Wish — rancangan halaman"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-wish"></use>
-                </svg>
-                <span class="nav-text">Wish</span>
-              </a>
-              <a
-                class="nav-item"
-                href="#token"
-                aria-label="Token — rancangan halaman"
-                title="Token — rancangan halaman"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-token"></use>
-                </svg>
-                <span class="nav-text">Token</span>
-              </a>
-              <a
-                class="nav-item"
-                href="#logout"
-                aria-label="Logout — rancangan halaman"
-                title="Logout — rancangan halaman"
-              >
-                <svg class="icon" aria-hidden="true" focusable="false">
-                  <use href="#icon-logout"></use>
-                </svg>
-                <span class="nav-text">Logout</span>
-              </a>
-            </nav>
-          </div>
-        </div>
-        
-        <div class="spec-note">
-          <svg class="icon" aria-hidden="true" focusable="false">
-            <use href="#icon-info"></use>
-          </svg>
-          <div>
-            <p>
-              <strong>NOTE:</strong>
-              Belum terhubung ke halaman lain. Komponen ini akan dipakai di halaman lain, misalnya dashboard, pengeluaran, pemasukan, budget, kategori, wish, dan token.
-            </p>
+            <aside class="sidebar" aria-label="Sidebar Dashboard">
+              <div class="brand">
+                <span class="brand-mark">
+                  <svg class="icon" aria-hidden="true" focusable="false">
+                    <use href="#icon-wallet"></use>
+                  </svg>
+                </span>
+                <span class="brand-copy">
+                  ProjectSOA
+                  <small>Asisten keuangan</small>
+                </span>
+              </div>
+              <nav aria-label="Navigasi Dashboard">
+                <div class="nav-group">
+                  <a
+                    class="nav-item active"
+                    href="#dashboard"
+                    aria-label="Dashboard"
+                    title="Dashboard"
+                    aria-current="page"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-dashboard"></use>
+                    </svg>
+                    <span class="nav-text">Dashboard</span>
+                  </a>
+                </div>
+                <div class="nav-group">
+                  <p class="nav-label">Keuangan</p>
+                  <a
+                    class="nav-item"
+                    href="#transactions"
+                    aria-label="Pengeluaran"
+                    title="Pengeluaran"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-expense"></use>
+                    </svg>
+                    <span class="nav-text">Pengeluaran</span>
+                  </a>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Pemasukan — rancangan halaman"
+                    title="Pemasukan — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-income"></use>
+                    </svg>
+                    <span class="nav-text">Pemasukan</span>
+                  </span>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Budget — rancangan halaman"
+                    title="Budget — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-budget"></use>
+                    </svg>
+                    <span class="nav-text">Budget</span>
+                  </span>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Kategori — rancangan halaman"
+                    title="Kategori — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-category"></use>
+                    </svg>
+                    <span class="nav-text">Kategori</span>
+                  </span>
+                </div>
+                <div class="nav-group">
+                  <p class="nav-label">Perencanaan</p>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Wish / cicilan — rancangan halaman"
+                    title="Wish / cicilan — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-wish"></use>
+                    </svg>
+                    <span class="nav-text">Wish / cicilan</span>
+                  </span>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Biaya rutin — rancangan halaman"
+                    title="Biaya rutin — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-recurring"></use>
+                    </svg>
+                    <span class="nav-text">Biaya rutin</span>
+                  </span>
+                </div>
+                <div class="nav-group">
+                  <p class="nav-label">Layanan</p>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Asisten AI — rancangan halaman"
+                    title="Asisten AI — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-ai"></use>
+                    </svg>
+                    <span class="nav-text">Asisten AI</span>
+                  </span>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Paket token — rancangan halaman"
+                    title="Paket token — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-wallet"></use>
+                    </svg>
+                    <span class="nav-text">Paket token</span>
+                  </span>
+                  <span
+                    class="nav-item"
+                    aria-disabled="true"
+                    aria-label="Laporan — rancangan halaman"
+                    title="Laporan — rancangan halaman"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-report"></use>
+                    </svg>
+                    <span class="nav-text">Laporan</span>
+                  </span>
+                  <span
+                    class="nav-item off"
+                    aria-disabled="true"
+                    aria-label="Bank — belum tersedia"
+                    title="Bank — belum tersedia"
+                  >
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-bank"></use>
+                    </svg>
+                    <span class="nav-text">Bank</span>
+                    <span class="nav-state">Off</span>
+                  </span>
+                </div>
+              </nav>
+              <div class="sidebar-footer">
+                <strong>Pratinjau M1</strong>
+                Menu lain masih berupa rancangan.
+              </div>
+            </aside>
+            <div class="content">
+              <header class="topbar">
+                <div class="">
+
+                </div>
+                <div class="topbar-right">
+                  <span class="token-pill">
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-wallet"></use>
+                    </svg>
+                    <span>2.500 token · demo</span>
+                  </span>
+                  <div class="account">
+                    <span class="avatar" aria-hidden="true">PD</span>
+                    <span class="account-copy">
+                      Pengguna demo
+                      <small>Pratinjau akun</small>
+                    </span>
+                  </div>
+                </div>
+                <details class="mobile-menu">
+                  <summary>
+                    <svg class="icon" aria-hidden="true" focusable="false">
+                      <use href="#icon-menu"></use>
+                    </svg>
+                    <span class="menu-label-open">Buka menu</span>
+                    <span class="menu-label-close">Tutup menu</span>
+                  </summary>
+                  <nav aria-label="Navigasi mobile Dashboard">
+                    <div class="nav-group">
+                      <a
+                        class="nav-item"
+                        href="#dashboard"
+                        aria-label="Dashboard"
+                        title="Dashboard"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-dashboard"></use>
+                        </svg>
+                        <span class="nav-text">Dashboard</span>
+                      </a>
+                    </div>
+                    <div class="nav-group">
+                      <p class="nav-label">Keuangan</p>
+                      <a
+                        class="nav-item"
+                        href="#transactions"
+                        aria-label="Pengeluaran"
+                        title="Pengeluaran"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-expense"></use>
+                        </svg>
+                        <span class="nav-text">Pengeluaran</span>
+                      </a>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Pemasukan — rancangan halaman"
+                        title="Pemasukan — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-income"></use>
+                        </svg>
+                        <span class="nav-text">Pemasukan</span>
+                      </span>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Budget — rancangan halaman"
+                        title="Budget — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-budget"></use>
+                        </svg>
+                        <span class="nav-text">Budget</span>
+                      </span>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Kategori — rancangan halaman"
+                        title="Kategori — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-category"></use>
+                        </svg>
+                        <span class="nav-text">Kategori</span>
+                      </span>
+                    </div>
+                    <div class="nav-group">
+                      <p class="nav-label">Perencanaan</p>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Wish / cicilan — rancangan halaman"
+                        title="Wish / cicilan — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-wish"></use>
+                        </svg>
+                        <span class="nav-text">Wish / cicilan</span>
+                      </span>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Biaya rutin — rancangan halaman"
+                        title="Biaya rutin — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-recurring"></use>
+                        </svg>
+                        <span class="nav-text">Biaya rutin</span>
+                      </span>
+                    </div>
+                    <div class="nav-group">
+                      <p class="nav-label">Layanan</p>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Asisten AI — rancangan halaman"
+                        title="Asisten AI — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-ai"></use>
+                        </svg>
+                        <span class="nav-text">Asisten AI</span>
+                      </span>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Paket token — rancangan halaman"
+                        title="Paket token — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-wallet"></use>
+                        </svg>
+                        <span class="nav-text">Paket token</span>
+                      </span>
+                      <span
+                        class="nav-item"
+                        aria-disabled="true"
+                        aria-label="Laporan — rancangan halaman"
+                        title="Laporan — rancangan halaman"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-report"></use>
+                        </svg>
+                        <span class="nav-text">Laporan</span>
+                      </span>
+                      <span
+                        class="nav-item off"
+                        aria-disabled="true"
+                        aria-label="Bank — belum tersedia"
+                        title="Bank — belum tersedia"
+                      >
+                        <svg class="icon" aria-hidden="true" focusable="false">
+                          <use href="#icon-bank"></use>
+                        </svg>
+                        <span class="nav-text">Bank</span>
+                        <span class="nav-state">Off</span>
+                      </span>
+                    </div>
+                  </nav>
+                </details>
+              </header>
+              <div class="page">
+                <div class="page-header">
+                  <div>
+                    <svg
+                      class="icon"
+                      aria-hidden="true"
+                      focusable="false"
+                      style="width: 48px; height: 48px; color: var(--color-primary)"
+                    >
+                      <use href="#icon-error"></use>
+                    </svg>
+                    <h3 class="page-title" title="Contoh Request Error">404</h3>
+                    <p title="Contoh status">Halaman tidak ditemukan.</p>
+                    <a class="button" href="#dashboard">
+                      Kembali ke dashboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-      </section>
-      <section
-              id="api-dashboard"
-        class="sheet"
-        aria-labelledby="api-dashboard-title"
-      >
-        <div class="sheet-title">
-          <h2 id="api-dashboard-title">06 · Dashboard API</h2>
-          <span class="spec">Rafael · Komponen bersama</span>
-        </div>
-        
-        <div class="screen">
-          <div class="shell">
-            <p>Contoh dashboard API akan ditampilkan di sini.</p>
-          </div>
-        </div>
-        
         <div class="spec-note">
           <svg class="icon" aria-hidden="true" focusable="false">
             <use href="#icon-info"></use>
           </svg>
           <div>
             <p>
-              <strong>NOTE:</strong>
-              Komponen ini akan menampilkan informasi terkait penggunaan API, termasuk log, statistik, dan status layanan.
+              <strong>Detail:</strong>
+              Halaman ini ditampilkan ketika pengguna mengakses URL yang tidak ada. Halaman ini menunggu integrasi dengan router SPA dan auth/ownership.
+              <code>GET /api/v1/dashboard/summary</code>
             </p>
           </div>
         </div>
+      </section>
     </main>
   </body>
 </html>
