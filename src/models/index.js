@@ -24,10 +24,33 @@
  */
 const db = {};
 
+<<<<<<< Updated upstream
 const { sequelize } = require("../databases/connection");
 
 const Buku = require("./Buku");
 const Karakter = require("./Karakter");
+=======
+const User = require('./User');
+const Category = require('./Category');
+const Transaction = require('./Transaction');
+const Budget = require('./Budget');
+const BudgetCategory = require('./Budget_categories');
+const ApiLog = require('./api/ApiLog');
+const ApiTier = require('./api/ApiTier');
+const ApiClient = require('./api/ApiClient');
+
+const db = {
+    User,
+    Category,
+    Transaction,
+    Budget,
+    BudgetCategory,
+    Budget_categories: BudgetCategory,
+    ApiLog,
+    ApiTier,
+    ApiClient,
+};
+>>>>>>> Stashed changes
 
 db.Buku = Buku(sequelize, sequelize.Sequelize);
 db.Karakter = Karakter(sequelize, sequelize.Sequelize);
@@ -39,6 +62,39 @@ for (const key of Object.keys(db)) {
     db[key].associate(db);
   }
 }
+
+db.User.hasMany(db.ApiClient, {
+    foreignKey: 'user_id',
+    as: 'api_clients',
+    onDelete: 'RESTRICT'
+});
+
+ApiClient.belongsTo(db.User, {
+    foreignKey: 'user_id',
+    as: 'user',
+    onDelete: 'RESTRICT'
+});
+
+ApiClient.belongsTo(db.ApiTier, {
+    foreignKey: 'api_tier_id',
+    as: 'api_tier',
+    onDelete: 'RESTRICT'
+});
+ApiTier.hasMany(db.ApiClient, {
+    foreignKey: 'api_tier_id',
+    as: 'api_clients',
+    onDelete: 'RESTRICT'
+});
+ApiClient.hasMany(db.ApiLog, {
+    foreignKey: 'api_client_id',
+    as: 'api_logs',
+    onDelete: 'RESTRICT'
+});
+ApiLog.belongsTo(db.ApiClient, {
+    foreignKey: 'api_client_id',
+    as: 'api_client',
+    onDelete: 'RESTRICT'
+});
 
 db.sequelize = sequelize;
 module.exports = db;
