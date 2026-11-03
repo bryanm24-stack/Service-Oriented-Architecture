@@ -16,10 +16,10 @@ const getBudgetSummary = async (req, res) => {
     const spending = await sequelize.query(
         `SELECT id_category, SUM(nominal) AS spent
          FROM transactions
-         WHERE id_user = :userId AND YEAR(createdAt) = :year AND MONTH(createdAt) = :month
+         WHERE id_user = $userId AND YEAR(createdAt) = $year AND MONTH(createdAt) = $month
          GROUP BY id_category`,
         {
-            replacements: { userId: budget.user_id, year: budget.year, month: budget.month },
+            bind: { userId: budget.user_id, year: budget.year, month: budget.month },
             type: QueryTypes.SELECT
         }
     );

@@ -94,9 +94,9 @@ const deleteUser = async (req, res) => {
 const getUserByIdRaw = async (req, res) => {
     const id = parse(idSchema, req.params.id);
     const [user] = await sequelize.query(
-        "SELECT id, name, email, createdAt, updatedAt FROM users WHERE id = :id AND deletedAt IS NULL",
+        "SELECT id, name, email, createdAt, updatedAt FROM users WHERE id = $id AND deletedAt IS NULL",
         {
-            replacements: {
+            bind: {
                 id
             },
             type: QueryTypes.SELECT

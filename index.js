@@ -23,7 +23,8 @@ app.use(require('./src/middlewares/errorHandler'));
 if (require.main === module) {
     const port = process.env.PORT || 3001;
 
-    app.listen(port, () => {
+    const host = process.env.HOST || "127.0.0.1";
+    app.listen(port, host, () => {
         console.log(`Server berjalan di port ${port}`);
         testConnection();
     });
