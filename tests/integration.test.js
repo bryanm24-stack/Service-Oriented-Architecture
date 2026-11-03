@@ -413,7 +413,7 @@ test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
 
     const sql = fs.readFileSync(path.join(__dirname, "../sql/Gabungan.sql"), "utf8");
 
-    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 5);
+    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 8);
 
     assert.match(sql, /id_category INT UNSIGNED NOT NULL/);
 

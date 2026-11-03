@@ -26,6 +26,13 @@ const main = async () => {
 
         await connection.query(sql);
 
+        // CREATE TABLE IF NOT EXISTS tidak menambah kolom pada DB lama.
+        // Role sudah ada di model User branch-baru; tambahkan hanya jika belum ada.
+        const [columns] = await connection.query("SHOW COLUMNS FROM users LIKE 'role'");
+        if (columns.length === 0) {
+            await connection.query("ALTER TABLE users ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'user'");
+        }
+
         console.log("[migrate] Gabungan.sql selesai. Data lama tidak dikosongkan.");
     } finally {
         await connection.end();

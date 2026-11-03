@@ -6,9 +6,10 @@ const { installStore } = require('./support/finance-store');
 const db = require('../src/models');
 const app = require('../index');
 
+// Synthetic adapter-only credential, never a real provider key.
 const sampleConfig = {
     MIDTRANS_ENVIRONMENT: 'sandbox',
-    MIDTRANS_SERVER_KEY: 'Mid-server-1xUor__AjW-aPDXMJveMb6wb',
+    MIDTRANS_SERVER_KEY: 'SB-Mid-server-' + '0'.repeat(24),
     MIDTRANS_ORDER_IDS: JSON.stringify({ '1': 'order-user-1', '2': 'order-user-2' })
 };
 
