@@ -24,12 +24,6 @@
  */
 const db = {};
 
-<<<<<<< Updated upstream
-const { sequelize } = require("../databases/connection");
-
-const Buku = require("./Buku");
-const Karakter = require("./Karakter");
-=======
 const User = require('./User');
 const Category = require('./Category');
 const Transaction = require('./Transaction');
@@ -50,7 +44,6 @@ const db = {
     ApiTier,
     ApiClient,
 };
->>>>>>> Stashed changes
 
 db.Buku = Buku(sequelize, sequelize.Sequelize);
 db.Karakter = Karakter(sequelize, sequelize.Sequelize);
