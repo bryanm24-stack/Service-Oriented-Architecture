@@ -1,8 +1,5 @@
 # Rancangan ProjectSOA — kontrak M1
 
-Pembaruan 3 November 2026: tampilan aktif memakai Laravel 13 + Blade/PWA pada laravel-web; Node tetap API dan pengelola MySQL. Antarmuka/alur login/register menunggu Dana, dengan koordinasi PIC auth backend. PWA tidak menjadi pengganti perlindungan SQL injection; raw SQL Node memakai bind parameter. Preview web dibatasi environment local/testing sampai auth/ownership selesai.
-
-
 Status: **draft kontrak bersama v0.1**, siap ditinjau Kenneth, Bryan, Dana, Rafael. Tidak menyatakan empat anggota sudah menyetujui.
 Sumber awal adalah arsip Service-Oriented-Architecture.zip, disalin sebagai ProjectSOA.
 Fokus M1 adalah baseline, relasi, kontrak API, pembagian PIC dan satu acuan UI. Tidak menambah pembayaran, AI, autentikasi, scheduler, atau migrasi bisnis baru.

@@ -1,43 +1,76 @@
-# Kontrak UI — Laravel/Blade + Node API
+# Kontrak UI v0.1 — satu sumber bersama
 
-Pembaruan 3 November 2026. Laravel 13 + Blade di laravel-web menjadi tampilan web dan mobile PWA. Node.js/Express tetap pemilik logika bisnis dan MySQL. frontend/ adalah arsip wireframe M1; rencana React/Vite sebelumnya diganti. Persetujuan empat anggota tetap belum dicatat.
+Status draft untuk ditinjau tim. [Wireframe empat layar](../frontend/wireframes.html) adalah referensi statis, bukan login/register/dashboard yang sudah berfungsi.
+Seluruh anggota memakai [tokens.css](../frontend/src/styles/tokens.css). PIC AppShell, Sidebar, Topbar dan style dasar: Kenneth.
 
-## Halaman yang sudah tersedia
+## Peta navigasi dan endpoint
 
-| URL web | Tampilan/fungsi | API existing /api/v1 |
-|---|---|---|
-| / | Ringkasan pengeluaran per bulan dan budget | users/:id/transactions, users/:id/budgets, budgets/:id/summary |
-| /pengeluaran | Filter, daftar kartu HP/tabel desktop, pagination | users/:id/transactions, categories |
-| /pengeluaran/tambah | Form pengeluaran | POST transactions |
-| /pengeluaran/:id/edit | Edit nominal/catatan; kategori existing dipertahankan | GET/PATCH transactions/:id |
-| Hapus dari daftar | Dialog konfirmasi | GET/DELETE transactions/:id |
-| /anggaran, /anggaran/:id | Daftar dan ringkasan anggaran | users/:id/budgets, budgets/:id/summary |
-| /kategori | Kategori bersama, baca saja | categories |
-| /aplikasi | Pemasangan dan informasi offline | Tidak ada data bisnis |
-| /login, /register | Belum dibuat; antarmuka/alur menunggu Dana | Endpoint autentikasi belum aktif |
+E = endpoint existing, belum JWT. P = planned, belum tersedia. Halaman privat belum boleh dihubungkan ke data nyata sebelum auth/ownership selesai.
 
-CRUD kategori/budget lainnya tetap melalui API existing. Tidak ada tampilan yang mengklaim pemasukan, wallet, pembayaran, AI, wish atau recurring sudah tersedia.
+| Halaman / URL frontend rencana | Navbar/sidebar | Endpoint atau sumber data | PIC |
+|---|---|---|---|
+| /login | PublicHeader sederhana | P POST /auth/login, /auth/refresh | Bryan |
+| /register | PublicHeader sederhana | P POST /auth/register; memakai model User existing, tidak membuat tabel user kedua | Bryan |
+| /dashboard | AppShell, Dashboard aktif | P GET /dashboard/summary, /token-wallet; E Budget summary sebagai salah satu sumber | Rafael |
+| /transactions | Keuangan > Pengeluaran | E GET/POST /transactions, GET/PUT/PATCH/DELETE /transactions/:id; E /categories | Dana |
+| /incomes | Keuangan > Pemasukan | P CRUD /incomes | Dana |
+| /budgets dan /budgets/:id | Keuangan > Budget | E CRUD /budgets, /budgets/:id/summary; pivot budget_categories tetap | Kenneth |
+| /categories | Keuangan > Kategori | E CRUD /categories; aturan admin pada milestone auth | Kenneth |
+| /tokens dan /purchases/:id | Layanan > Paket token | P /token-packages, /purchases, /token-wallet, /token-ledger | Bryan |
+| /ai dan /ai/history | Layanan > Asisten AI | P /ai/requests, /ai/usages, /tips | Dana |
+| /wishes dan /wishes/:id | Perencanaan > Wish | P /wishes, installments, realizations | Rafael |
+| /recurring-costs | Perencanaan > Biaya rutin | P CRUD /recurring-costs | Dana |
+| /reports | Laporan | P /reports/summary, /reports/expenses.pdf | Rafael |
+| /bank | Integrasi opsional | P /bank/*, tampil disabled/off sampai syarat akses dipenuhi | Rafael |
+| /profile | Menu akun pada Topbar | P GET /auth/me; E User CRUD setelah ownership terpasang | Bryan |
 
-## Satu sumber tampilan
+Seluruh path endpoint pada tabel memakai prefix /api/v1.
+Sidebar desktop: Dashboard; Keuangan (Pengeluaran, Pemasukan, Budget, Kategori); Perencanaan (Wish, Biaya rutin); Layanan (Asisten AI, Paket token); Laporan; Bank bersyarat.
+Topbar: nama halaman, periode yang relevan, saldo token dari server, menu akun/logout. Jangan membuat empat sidebar terpisah pada folder halaman.
 
-Gaya aktif: laravel-web/public/assets/app.v1.css. Layout bersama: resources/views/layouts/app.blade.php. Ikon dan empty state memakai Blade components; daftar pengeluaran memakai satu partial untuk kartu mobile dan tabel desktop. Jangan membuat sidebar/form/CSS global berbeda di masing-masing modul.
+## Warna, tipografi dan jarak
 
-Warna utama #0F766E, hover #115E59, ink #152923, muted #5A7068, background #F5F8F6, surface putih, border #DCE7E1, danger #B42318. Font system-ui tanpa CDN. Input 16px untuk mobile; kontrol sekurangnya 44px; fokus keyboard terlihat. Spacing memakai langkah 4/8/12/16/20/24/28/32. Panel radius 16px dan kontrol 9–10px.
-Desktop >=1024 memakai sidebar 248px; di bawahnya memakai bottom navigation dengan safe-area. Pada mobile <=639px, metrik dan filter disusun satu kolom agar nominal/pilihan tidak terpotong. Tabel desktop diganti kartu di mobile, bukan melebarkan halaman. Pengujian 320/375/820/1440px tidak menemukan overflow halaman.
+| Token | Nilai / fungsi |
+|---|---|
+| primary / hover | #0F766E / #115E59, tombol dan tautan utama |
+| ink / muted | #0F172A / #475569 |
+| background / surface / border | #F8FAFC / #FFFFFF / #CBD5E1 |
+| primary-soft / code-background | #F0FDFA / #E2E8F0, latar ikon dan anotasi |
+| sidebar text / muted / hover | #E2E8F0 / #B7C3D4 / #1E293B |
+| shadow-panel | 0 4px 16px rgb(15 23 42 / 4%), bayangan tipis bingkai wireframe |
+| success / warning / danger | #15803D / #B45309 / #B91C1C; selalu disertai teks |
+| font | system-ui, -apple-system, Segoe UI, sans-serif; tanpa ketergantungan CDN |
+| ukuran | body 16px, label 14px, caption 12px, h1 32px, h2 24px, angka ringkasan 28px |
+| spacing | 4, 8, 12, 16, 24, 32, 48px; radius kontrol 8px, panel 12px |
+| kontrol | tinggi minimum 44px; fokus terlihat; label tetap terlihat |
 
-## Data dan state
+## Komponen dan struktur bersama
 
-Pemilik preview ditetapkan server melalui SOA_LOCAL_USER_ID, hanya pada APP_ENV local/testing dengan preview flag. Tidak ada pilihan user pada form. Ini bukan autentikasi produksi. Laravel mengambil API server-ke-server; tidak ada koneksi MySQL dari tampilan. Nominal diproses dalam integer sen; input memakai string desimal tanpa pemisah ribuan.
+Frontend rencana memakai React + Vite + TypeScript; dependency/framework **belum dipasang** pada M1.
+Struktur dan batas import ada di [frontend/README.md](../frontend/README.md).
+Komponen: AppShell, PublicLayout, Sidebar, Topbar, PageHeader, Button, FormField, MoneyInput, DateInput, Select, DataTable, Pagination, StatusLabel, EmptyState, ErrorState, LoadingState dan ConfirmDialog.
+Halaman mengonsumsi komponen bersama. Tidak menduplikasi CSS global, warna hex, formatter rupiah, sidebar, fetch/auth interceptor, error parser, atau dialog konfirmasi.
+Perubahan komponen bersama direview Kenneth dan satu pemakai komponen tersebut. API/types shared direview Bryan; endpoint legacy dinormalisasi eksplisit di satu adapter.
 
-Blade meng-escape teks. Form memakai CSRF, validasi server, konfirmasi hapus dan pencegahan submit ganda. Pesan kosong, sukses, error API dan offline tersedia. Error tidak mengirim payload/debug/SQL/key upstream. Respons halaman private memakai no-store.
+## Responsif dan perilaku
 
-PWA hanya mencache aset statis dan offline.html. Data keuangan/HTML personal/response API/token tidak disimpan. Tidak ada antrean penyimpanan offline. HTTPS diperlukan di HP untuk service worker/pemasangan; localhost/loopback mendapat pengecualian pengembangan.
+- Mobile <768px: header dengan tombol menu, drawer satu Sidebar yang sama, satu kolom, padding 16px. Form login/register max-width 440px.
+- Tablet 768–1023px: sidebar ringkas 72px memakai ikon dengan accessible label dan title; teks menu tidak dipecah per huruf. Form 1–2 kolom sesuai ruang.
+- Desktop >=1024px: sidebar 240px, content max-width 1200px, padding 24–32px; form utama max-width 720px.
+- Tabel berada pada container overflow-x:auto; halaman tidak melebar. Kolom penting tetap terbaca. Input tidak terpotong pada layar 375px.
+- Setiap layar data mempunyai loading, kosong, berhasil dan gagal. Jika bank belum tersedia, tampil alasan dan pencatatan manual; jangan menampilkan status tersambung palsu.
+- Tombol submit disabled saat pending. Tampilkan error per field dari kontrak API; jangan menampilkan SQL atau key. 401 membersihkan sesi dan mengarahkan login; 409 saldo token memandu ke paket token.
+- Format rupiah hanya di tampilan; payload uang adalah string dua desimal, token adalah integer. Field user_id/id_user tidak menjadi input yang bisa dipilih pengguna biasa.
+- Dashboard menampilkan periode sumber dan status data. Nilai contoh wireframe harus diberi label ilustrasi dan tidak dianggap saldo API.
+- Keyboard: label terhubung ke input, focus ring jelas, drawer/dialog dapat ditutup Esc dan mengembalikan fokus. Warna tidak menjadi satu-satunya tanda error.
 
-## Handoff dan review
+Wireframe HTML/CSS bekerja offline, memakai ikon SVG lokal dan satu stylesheet bersama. Menu mobile pada wireframe memakai details/summary yang dapat dibuka/ditutup dengan keyboard; drawer aplikasi beserta perilaku Esc masih menjadi pekerjaan implementasi. Hanya tautan ke empat contoh dan form yang aktif; submit, filter, edit/hapus dan integrasi API belum berfungsi. Catatan teknis endpoint berada di luar bingkai layar.
 
-Dana mengerjakan antarmuka/alur login/register berikutnya bersama PIC API autentikasi. PreviewUserContext dan EnsureLocalPreview diganti hanya setelah identitas serta ownership Node terverifikasi. Tidak membuat tabel users atau kredensial kedua di Laravel.
+## Checklist persetujuan UI
 
-- [ ] Kenneth meninjau layout, gaya dan relasi data yang ditampilkan.
-- [ ] Bryan meninjau kontrak API dan koordinasi auth/ownership.
-- [ ] Dana meninjau form serta merancang integrasi login/register.
-- [ ] Rafael meninjau dashboard, ringkasan dan responsif.
+- [ ] Kenneth meninjau tokens dan satu AppShell.
+- [ ] Bryan meninjau login/register dan state sesi.
+- [ ] Dana meninjau satu tabel/form dan validasi uang.
+- [ ] Rafael meninjau dashboard, mapping endpoint dan responsif.
+
+Checklist sengaja belum dicentang. Artefak siap dipakai meninjau, belum merupakan bukti persetujuan empat orang.
