@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { Budget, BudgetCategory, User, Category, sequelize } = require('../models');
-const { budgetBody, budgetId, budgetListQuery } = require('../utils/validation/budgetSchemas');
+const { budgetBody, budgetId, budgetListQuery, budgetPatch } = require('../utils/validation/budgetSchemas');
 const { parse } = require('../utils/validation/resourceSchemas');
 const httpError = require('../utils/httpError');
 
@@ -135,9 +135,9 @@ const getBudgetById = async (req, res) => {
     return res.json({ status: 'success', data: budget });
 };
 
-const updateBudget = async (req, res) => {
+const saveBudget = async (req, res, partial) => {
     const id = parse(budgetId, req.params.id);
-    const value = parse(budgetBody, req.body);
+    const input = parse(partial ? budgetPatch : budgetBody, req.body);
     const updated = await sequelize.transaction(async transaction => {
         const budget = await Budget.findByPk(id, {
             transaction,
@@ -148,7 +148,14 @@ const updateBudget = async (req, res) => {
             throw httpError(404, 'Budget tidak ditemukan');
         }
 
-        await checkReferences(value, transaction);
+        const value = partial ? {
+            user_id: budget.user_id,
+            month: budget.month,
+            year: budget.year,
+            ...input
+        } : input;
+
+        await checkReferences({ ...value, budget_categories: value.budget_categories || [] }, transaction);
         await checkPeriod(value, transaction, id);
 
         await budget.update({
@@ -157,18 +164,34 @@ const updateBudget = async (req, res) => {
             year: value.year
         }, { transaction });
 
-        // PUT mengganti seluruh daftar alokasi secara atomik.
-        await BudgetCategory.destroy({
-            where: { budget_id: id },
-            transaction
-        });
-
-        await createAllocations(id, value.budget_categories, transaction);
+        // PATCH mempertahankan alokasi jika field tidak dikirim; jika dikirim, ganti seluruh daftar.
+        if (value.budget_categories !== undefined) {
+            await BudgetCategory.destroy({ where: { budget_id: id }, transaction });
+            await createAllocations(id, value.budget_categories, transaction);
+        }
 
         return joinedBudget(id, transaction);
     });
 
     return res.json({ status: 'success', data: updated });
+};
+
+const updateBudget = (req, res) => saveBudget(req, res, false);
+const patchBudget = (req, res) => saveBudget(req, res, true);
+
+const getBudgetsByUser = async (req, res) => {
+    const id = parse(budgetId, req.params.id);
+    parse(budgetListQuery, req.query);
+
+    if (req.query.user_id !== undefined && Number(req.query.user_id) !== id) {
+        throw httpError(400, 'user_id pada query harus sama dengan ID pada URL');
+    }
+
+    if (!await User.findByPk(id)) throw httpError(404, 'User aktif tidak ditemukan');
+
+    const budgets = await Budget.findAll({ where: { user_id: id }, include: budgetInclude, order: [['budget_id', 'ASC']] });
+
+    return res.json({ status: 'success', data: budgets });
 };
 
 const deleteBudget = async (req, res) => {
@@ -196,6 +219,8 @@ const deleteBudget = async (req, res) => {
 };
 
 module.exports = {
+    patchBudget,
+    getBudgetsByUser,
     createBudget,
     getAllBudgets,
     getBudgetById,

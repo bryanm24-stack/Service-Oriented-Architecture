@@ -12,11 +12,10 @@ const { scryptSync } = require('node:crypto');
 test('No. 4–5: kontrak gabungan DB/API, validasi, dan kegagalan upstream', async () => {
     const originalAdapter = axios.defaults.adapter;
     const originalFind = db.Transaction.findByPk;
-    const originalEnv = Object.fromEntries(['EXCHANGE_RATE_API_KEY', 'DISCORD_WEBHOOK_URL', 'API_TIMEOUT_MS'].map(key => [key, process.env[key]]));
+    const originalEnv = Object.fromEntries(['EXCHANGE_RATE_API_KEY', 'API_TIMEOUT_MS'].map(key => [key, process.env[key]]));
 
     process.env.EXCHANGE_RATE_API_KEY = 'FAKE_TEST_KEY';
 
-    process.env.DISCORD_WEBHOOK_URL = 'https://example.invalid/FAKE_SECRET';
 
     process.env.API_TIMEOUT_MS = '100';
 
@@ -175,79 +174,6 @@ test('No. 4–5: kontrak gabungan DB/API, validasi, dan kegagalan upstream', asy
             name: '',
             icon: 123
         });
-
-        await request('/api/v1/contoh', 400, 'POST', {
-            extra: 1
-        });
-
-        await request('/api/v1/contoh', 200, 'POST', {
-            nama: 'Tes',
-            umur: 20
-        });
-
-        await request('/api/v1/contoh/gabungan/1', 400, 'PUT', {});
-
-        await request('/api/v1/contoh/gabungan/1', 200, 'PUT', {
-            judul: 'Contoh'
-        });
-
-        await request('/api/v1/contohAxios/webhook', 400, 'POST', {
-            pesan: ''
-        });
-
-        await request('/api/v1/contohAxios/webhook', 400, 'POST', {
-            pesan: 'Tes',
-            url: 'evil'
-        });
-
-        scenario = 'network';
-
-        const webhook = await request('/api/v1/contohAxios/webhook', 200, 'POST', {
-            pesan: 'Tes'
-        });
-
-        assert.equal(webhook.notification.sent, false);
-
-        scenario = 'success';
-
-        const sent = await request('/api/v1/contohAxios/webhook', 200, 'POST', {
-            pesan: 'Tes'
-        });
-
-        assert.equal(sent.notification.sent, true);
-
-        assert.equal(lastConfig.timeout, 100);
-
-        const input = JSON.parse(lastConfig.data);
-
-        assert.equal(input.content, 'Tes');
-
-        assert.deepEqual(input.allowed_mentions, {
-            parse: []
-        });
-
-        scenario = 'timeout';
-
-        await request('/api/v1/contohAxios', 504);
-
-        scenario = 'network';
-
-        await request('/api/v1/contohAxios', 502);
-
-        scenario = 'malformed';
-
-        await request('/api/v1/contohAxios', 502);
-
-        const demo = await request('/api/v1/contoh/validasi', 200, 'POST', {
-            pengguna_username: 'Tester',
-            pengguna_email: 'test@example.com',
-            pengguna_password: 'Password123!',
-            pengguna_konfirmasi_password: 'Password123!'
-        });
-
-        assert.equal(demo.value.pengguna_password, undefined);
-
-        assert.equal(demo.value.pengguna_konfirmasi_password, undefined);
 
         console.log(`${checked} pemeriksaan HTTP tambahan nomor 4–5 lulus.`);
     } finally {

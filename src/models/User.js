@@ -37,6 +37,11 @@ const User = sequelize.define(
                 }
             },
         },
+        role: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            defaultValue: 'user'
+        },
         profile_info: {
             type: DataTypes.VIRTUAL,
             get() {
@@ -51,6 +56,11 @@ const User = sequelize.define(
         defaultScope: {
             attributes: {
                 exclude: ["password"]
+            }
+        },
+        scopes: {
+            withPassword: {
+                attributes: { include: ['password'] }
             }
         }
     }

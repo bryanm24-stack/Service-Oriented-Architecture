@@ -1,4 +1,3 @@
-const { DataTypes } = require('sequelize');
 const { sequelize } = require('../databases/connection');
 
 const User = require('./User');
@@ -8,8 +7,6 @@ const Budget = require('./Budget');
 const BudgetCategory = require('./Budget_categories');
 
 const db = {
-    Buku: require('./Buku')(sequelize, DataTypes),
-    Karakter: require('./Karakter')(sequelize, DataTypes),
     User,
     Category,
     Transaction,
@@ -17,13 +14,6 @@ const db = {
     BudgetCategory,
     Budget_categories: BudgetCategory
 };
-
-// Buku dan Karakter mempertahankan pola factory dari materi.
-for (const model of [db.Buku, db.Karakter]) {
-    if (typeof model.associate === 'function') {
-        model.associate(db);
-    }
-}
 
 // Seluruh model sudah tersedia sebelum relasi dipasang.
 

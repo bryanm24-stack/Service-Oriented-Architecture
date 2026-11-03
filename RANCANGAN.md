@@ -1,145 +1,116 @@
-# Rancangan Asisten Keuangan — perbaikan nomor 4 dan 5
+# Rancangan ProjectSOA — kontrak M1
 
-## Cakupan dan status
+Status: **draft kontrak bersama v0.1**, siap ditinjau Kenneth, Bryan, Dana, Rafael. Tidak menyatakan empat anggota sudah menyetujui.
+Sumber awal adalah arsip Service-Oriented-Architecture.zip, disalin sebagai ProjectSOA.
+Fokus M1 adalah baseline, relasi, kontrak API, pembagian PIC dan satu acuan UI. Tidak menambah pembayaran, AI, autentikasi, scheduler, atau migrasi bisnis baru.
 
-Implementasi ini menghubungkan Users, Categories, Transactions, Budget, dan endpoint konversi kurs melalui index.js / npm start. Endpoint materi Buku, Contoh, serta ContohAxios dipertahankan. Integrasi Budget tidak berarti seluruh kriteria UTS di luar cakupan ini telah selesai.
+## 1. Yang sudah berjalan dan yang baru dirancang
 
-Kontrol akses di bawah adalah **rancangan**, sesuai pembahasan nomor 4. Kode belum menerapkan login, JWT, pemeriksaan peran, atau pembatasan pemilik data. Endpoint lokal masih dapat dipanggil tanpa autentikasi. Hash password tidak sama dengan autentikasi maupun otorisasi.
+Existing: 30 endpoint, 5 model, CRUD User/Category/pengeluaran/Budget, N:M Budget–Category, summary, konversi kurs, serta pembacaan status order Midtrans.
+Belum ada: login/JWT, pembelian paket token, wallet/ledger, pemanggilan AI, pemasukan, wish/cicilan, recurring, PDF dan koneksi bank.
+Adapter Midtrans existing hanya membaca status order dari pemetaan environment. Ini belum menjadi sistem pembelian atau bukti saldo token.
 
-## Nomor 4 — validasi dan perlindungan data
+| Fitur rencana | Aturan awal | PIC utama |
+|---|---|---|
+| Pemasukan | Model Income terpisah; nominal positif, sumber, tanggal; tidak mengubah transaksi lama menjadi pemasukan | Dana |
+| Paket token | TokenPackage berisi jumlah token integer, harga IDR, status aktif dan versi; harga katalog final belum ditentukan | Bryan |
+| Pembelian | Purchase menyimpan snapshot harga/token paket; pemilik dan nominal berasal dari server | Bryan |
+| Wallet / ledger | Satu wallet per user; ledger append-only untuk kredit, debit dan koreksi; saldo tidak diedit dari client | Kenneth |
+| AI usage | Simpan input/output token aktual provider, model, status dan referensi debit; bukan panjang karakter | Dana |
+| Tips gratis | Rekomendasi berbasis aturan tanpa debit wallet; jika memakai AI nanti, biaya tidak diam-diam dibebankan ke user | Dana |
+| Wish / cicilan | Target cash atau rencana cicilan pribadi; bukan pengajuan kredit atau layanan pemberian pinjaman | Rafael |
+| Recurring | Jadwal aktif/jeda, biaya dapat diedit untuk periode berikutnya; histori yang sudah terbentuk tetap | Dana |
+| Laporan | Ringkasan pemasukan/pengeluaran dan PDF sesuai pemilik serta periode yang sama | Rafael |
+| Bank bersyarat | Hanya jika akses API resmi, sandbox, izin pengguna dan lingkup akses tersedia; jika belum, tetap off dan gunakan pencatatan manual | Rafael |
 
-POST/PUT/PATCH yang aktif memakai Joi: Users, Categories, Transactions, Buku, contoh body, demo validasi user, dan webhook. Helper memakai `abortEarly: false`, sehingga semua kesalahan dilaporkan sekaligus. Pesan menyebut field dan menggunakan bahasa Indonesia. Resource utama menolak field asing; Buku serta demo schema memakai `stripUnknown: true`, lalu hanya menggunakan `value` hasil validasi. PATCH resource utama menolak body kosong. Endpoint Transactions menyediakan PATCH, bukan PUT; metode yang tidak tersedia mendapat 405 dan header Allow.
+## 2. Relasi existing wajib dipertahankan
 
-SQL raw memakai replacements untuk nilai dan daftar pilihan sorting yang dibatasi Joi. Model menggunakan satu instance Sequelize. Foreign key menghubungkan `transactions.id_user` ke `users.id` serta `transactions.id_category` ke `categories.id`. Kategori yang masih terpakai ditolak dengan 409. User dihapus secara soft delete sehingga transaksi historis tetap tersimpan.
-
-Password pada create/update Users di-hash memakai scrypt dengan salt acak. Password dan hash tidak dikirim pada respons. Seed user pada SQL menggunakan hash untuk password demo `Password123!`; ini akun latihan, bukan kredensial produksi. Password plaintext yang sudah tersimpan di database lama tidak otomatis dikonversi: perubahan password melalui PUT/PATCH akan menghasilkan hash baru. Belum ada fitur login.
-
-Error handler menyaring error sebelum dikirim: validasi 400, data hilang 404, konflik 409, database tidak tersedia 503, dan error internal generik 500. SQL, nama tabel, stack trace, konfigurasi Axios, URL yang memuat key, dan payload upstream tidak diteruskan kepada client. SQL logging dinonaktifkan secara default.
-
-## Matriks peran × endpoint (rancangan, belum diberlakukan)
-
-Semua jalur diawali `/api/v1`.
-
-| Endpoint | Admin | Pengguna terautentikasi | Tamu |
-|---|---|---|---|
-| GET /users | Daftar semua user | Ditolak | Ditolak |
-| POST /users | Membuat akun | Ditolak | Ditolak |
-| GET /users/:id | Semua akun | Akun sendiri | Ditolak |
-| PUT/PATCH /users/:id | Semua akun | Akun sendiri | Ditolak |
-| DELETE /users/:id | Menghapus secara soft delete | Ditolak | Ditolak |
-| GET /categories dan /categories/:id | Boleh | Boleh | Ditolak |
-| POST /categories | Boleh | Ditolak | Ditolak |
-| PATCH/DELETE /categories/:id | Boleh | Ditolak | Ditolak |
-| GET /transactions (termasuk mode=raw) | Semua transaksi | Transaksi sendiri | Ditolak |
-| POST /transactions | Boleh, pemilik harus valid | Pemilik diambil dari sesi sendiri | Ditolak |
-| PATCH/DELETE /transactions/:id | Semua transaksi | Transaksi sendiri | Ditolak |
-| GET /categories/:id/transactions | Semua transaksi kategori | Transaksi sendiri dalam kategori | Ditolak |
-| GET /transactions/:id/conversion | Semua transaksi | Transaksi sendiri | Ditolak |
-| Semua endpoint /buku, /contoh, /contohAxios | Khusus lingkungan latihan | Ditolak | Ditolak |
-
-Rancangan Admin menjaga pengelolaan akun dan kategori tetap terpusat. Perubahan atau penghapusan data perlu audit identitas admin, waktu, dan ID resource. Rancangan Pengguna melindungi catatan keuangan pribadi: setiap pencarian, perubahan, dan penghapusan harus memeriksa `id_user` milik identitas terverifikasi. Jangan mempercayai `id_user` atau `role` dari body sebagai bukti hak akses. Endpoint nested kategori, raw query, dan konversi kurs wajib mendapat filter kepemilikan yang sama. Tamu tidak boleh membaca data keuangan, email, ataupun memicu penggunaan kuota API.
-
-Implementasi lanjutan memerlukan middleware autentikasi, middleware peran, dan pemeriksaan kepemilikan pada controller/query. Untuk pengguna biasa, isi `id_user` dari identitas terverifikasi. Jangan memakai header buatan sendiri seperti `X-Role: admin` sebagai autentikasi. Endpoint latihan dibatasi lingkungan pengembangan atau akses admin.
-
-## Kredensial lokal dan cloud
-
-Kredensial MySQL, `EXCHANGE_RATE_API_KEY`, dan URL webhook hanya di `.env`. `.gitignore` mengabaikan `.env` dan turunannya, kecuali `.env.example` yang berisi placeholder. `.gitignore` tidak menghapus file yang sudah pernah terlacak: periksa `git ls-files .env`; jika muncul, jalankan `git rm --cached .env` untuk melepasnya dari indeks tanpa menghapus file lokal. Riwayat commit belum diperiksa dalam paket ini. Jika kredensial asli pernah tersebar, ganti kredensial tersebut.
-
-Saat dipasang di cloud, konfigurasi rahasia dipindahkan dari file `.env` lokal ke secret manager atau environment secret platform. Beri akses hanya pada identitas layanan yang membutuhkannya; pisahkan kredensial development dan production, gunakan akun database dengan hak minimum, rotasi key, dan jangan menaruhnya dalam repository, image build, respons, maupun log. Aktifkan TLS untuk akses aplikasi dan koneksi database sesuai konfigurasi penyedia.
-
-## Nomor 5 — menggabungkan database dan API
-
-Endpoint:
-
-```http
-GET /api/v1/transactions/:id/conversion?currency=USD
+```mermaid
+erDiagram
+    users ||--o{ transactions : memiliki
+    users ||--o{ budget : memiliki
+    categories ||--o{ transactions : mengelompokkan
+    budget ||--o{ budget_categories : mengalokasikan
+    categories ||--o{ budget_categories : dipakai
+    budget_categories {
+        int id PK
+        int budget_id FK
+        int category_id FK
+        decimal allocated_amount
+    }
 ```
 
-Mata uang asal nominal transaksi adalah IDR. Target yang diterima: USD, EUR, SGD, JPY, IDR. Default USD. Sistem mengambil transaksi beserta user dan kategori menggunakan eager loading, lalu meminta kurs IDR melalui Axios ke Standard endpoint ExchangeRate-API. API key dibaca dari environment. URL upstream bersifat tetap; client tidak boleh mengirim URL upstream atau API key lewat query.
+`Budget.belongsToMany(Category, { through: BudgetCategory })` dan relasi balik tetap.
+BudgetCategory tetap memakai file `src/models/Budget_categories.js`, tabel `budget_categories`, alias ekspor `BudgetCategory` dan alias legacy `Budget_categories`.
+UNIQUE(budget_id, category_id) serta UNIQUE(user_id, month, year) tetap. Alokasi uang berada pada pivot, bukan kolom Category.
 
-API key memang ditempatkan dalam jalur URL sesuai kontrak provider. Karena itu, kode tidak mencetak URL, `error.config`, atau error Axios mentah. Timeout dan AbortSignal membatasi waktu tunggu, redirect dinonaktifkan, serta ukuran respons dibatasi.
+## 3. Calon relasi baru — belum menjadi model runtime
 
-Respons milik aplikasi hanya berisi `data.transaction` dari MySQL dan `data.conversion` hasil pemetaan provider. Field provider dipilih dan diganti namanya: `base_code` menjadi `base_currency`, mata uang yang diminta menjadi `target_currency`, satu nilai `conversion_rates` menjadi `rate`, dan `time_last_update_unix` menjadi `updated_at`. Payload provider lengkap tidak diteruskan.
+```mermaid
+erDiagram
+    User ||--o{ Purchase : purchases
+    User ||--o{ AIUsage : ai_usages
+    User ||--o{ Wish : wishes
+    User ||--o{ RecurringCost : recurring_costs
+    User ||--o| TokenWallet : token_wallet
+```
 
-`estimated_amount` adalah estimasi tampilan dengan dua angka desimal, bukan nominal untuk pembukuan, tagihan, atau settlement. Timestamp menunjukkan waktu pembaruan kurs provider, bukan waktu pembuatan transaksi. Nominal asli tetap dikembalikan sebagai string dan tidak diubah di database. Tidak ada klaim kurs real-time atau kurs historis transaksi. Penambahan konversi memenuhi kebutuhan menampilkan perkiraan biaya transaksi dalam mata uang lain.
+User.hasMany(Purchase/AIUsage/Wish/RecurringCost) dan pasangan belongsTo memakai FK baru `user_id`.
+User.hasOne(TokenWallet), TokenWallet.belongsTo(User), UNIQUE(token_wallets.user_id).
+Wallet boleh belum ada untuk user lama; dibuat sekali secara transaksional saat fitur diaktifkan. UI menampilkan belum tersedia sampai backfill selesai, bukan mengarang saldo.
 
-| Kondisi | Respons |
-|---|---|
-| ID/query tidak valid | 400, sebelum memanggil provider |
-| Transaksi tidak ditemukan | 404, sebelum memanggil provider |
-| API key belum diisi | 503 |
-| Timeout atau batas AbortSignal tercapai | 504 |
-| Network error / non-2xx provider, termasuk 429 | 502 |
-| Provider mengembalikan `result: error`, rate hilang, atau payload tidak valid | 502 |
-| Kesalahan kode/configuration internal | 500 generik |
+| Model calon / tabel | Field awal penting | Relasi / batas unik |
+|---|---|---|
+| Income / incomes | id, user_id, amount, source, occurred_on, note | User hasMany Income |
+| TokenPackage / token_packages | id, name, token_amount, price_idr, version, is_active | hasMany Purchase; snapshot wajib |
+| Purchase / purchases | id, user_id, token_package_id, order_id, amount, currency, token_amount, status, idempotency_key | UNIQUE(order_id), UNIQUE(user_id,idempotency_key) |
+| TokenWallet / token_wallets | id, user_id, balance_tokens, reserved_tokens | UNIQUE(user_id); saldo tersedia = balance-reserved |
+| TokenLedger / token_ledgers | id, user_id, token_wallet_id, delta_tokens, balance_after, reference_type, reference_id, event_key | UNIQUE(event_key); append-only |
+| AIUsage / ai_usages | id, user_id, model, input_tokens, output_tokens, charged_tokens, status, idempotency_key, provider_usage | UNIQUE(user_id,idempotency_key); referensi debit ledger unik |
+| Wish / wishes | id, user_id, name, target_amount, method, target_date, status | method cash/installment |
+| WishInstallment / wish_installments | id, wish_id, sequence, due_on, amount, transaction_id, status | UNIQUE(wish_id,sequence); pembayaran tercatat sekali |
+| RecurringCost / recurring_costs | id, user_id, category_id, amount, interval_unit, interval_count, next_due_on, status | belongsTo Category |
+| RecurringOccurrence / recurring_occurrences | id, recurring_cost_id, due_on, transaction_id | UNIQUE(recurring_cost_id,due_on) |
 
-Tidak ada fallback kurs dan tidak memakai angka kurs palsu ketika provider gagal. Operasi CRUD transaksi tetap terpisah dari endpoint kurs; kegagalan kurs tidak mengubah data transaksi. Kegagalan webhook memakai kebijakan berbeda: notifikasi bersifat tambahan sehingga tidak menggagalkan penyimpanan Buku. Endpoint uji webhook mengembalikan `notification.sent` serta alasan kegagalan generik, tanpa mengaku terkirim jika gagal.
+PK resource baru direncanakan INT UNSIGNED. FK ke `users.id` harus INT signed seperti tabel existing.
+Jumlah token memakai integer, tanpa pecahan. Ledger boleh mempunyai delta negatif; balance dan reserved tidak negatif, dan reserved tidak boleh melebihi balance. FK histori uang/token ke User memakai RESTRICT, bukan cascade penghapusan ledger.
+Pilihan BIGINT untuk token harus tetap membatasi JSON integer pada Number.MAX_SAFE_INTEGER; angka di luar batas ditolak, tidak dibulatkan.
 
-## Verifikasi
+## 4. Aturan bisnis yang mengikat rancangan
 
-`npm test` menjalankan lima kelompok uji: CRUD dan hubungan resource; model/relasi/SQL; HTTP validasi dan integrasi API; request Axios ke server lokal; dan hash password. Terdapat 49 pemeriksaan HTTP CRUD dan 27 pemeriksaan HTTP tambahan. Pengujian memakai stub database, adapter Axios untuk skenario provider, serta server HTTP lokal untuk memastikan penanganan status dan timeout sungguhan. Semua lulus pada lingkungan penyusunan. Pengujian MySQL nyata, API provider dengan key asli, pengiriman Discord sungguhan, serta kontrol akses berbasis identitas belum dilakukan.
+1. Pembelian pending belum menambah saldo. Callback verified dan status pembayaran sah mengkredit wallet sekali dalam transaksi yang sama dengan ledger dan status Purchase. Redirect browser tidak membuktikan pembayaran.
+2. Request checkout memakai Idempotency-Key per user. Replay mengembalikan Purchase yang sama; payload berbeda pada key sama menghasilkan 409.
+3. AI memakai reservasi saldo, lalu debit usage aktual dan pelepasan sisa. Kegagalan sebelum tagihan melepas reservasi; hasil provider yang belum pasti masuk rekonsiliasi, bukan langsung mengulang debit. Semua perubahan saldo melalui satu service wallet milik Kenneth.
+4. Kontrak tarif awal untuk disetujui: charged_tokens = input_tokens + output_tokens, 1 kredit internal per token provider. Pemetaan usage/model disimpan dengan versi. Input panjang tidak menjamin output panjang; keduanya dihitung terpisah dari usage provider.
+5. Cash pada Wish baru menjadi pengeluaran setelah realisasi dikonfirmasi. Cicilan adalah rencana: payload memakai term_months integer; input tahun pada UI diubah eksplisit menjadi jumlah bulan; angsuran terakhir menyerap selisih pembulatan dua desimal. Bunga/biaya tambahan belum disepakati dan tidak boleh diasumsikan.
+6. Recurring menghasilkan satu occurrence per tanggal jatuh tempo. Edit biaya tidak mengubah histori. Saat merealisasikan recurring/cicilan, tautkan ke satu Transaction untuk mencegah pengeluaran ganda.
+7. Income tetap terpisah dari pengeluaran existing. Laporan saldo uang = pemasukan - pengeluaran, sedangkan saldo token adalah satuan layanan AI yang berbeda.
+8. Semua sumber milik user diperiksa di server berdasarkan JWT terverifikasi. Resource milik orang lain tidak boleh terbaca hanya karena ID-nya diketahui.
 
-## Referensi implementasi
+## 5. Data, migrasi dan kompatibilitas
 
-- [ExchangeRate-API Standard Requests](https://www.exchangerate-api.com/docs/standard-requests)
-- [Axios Handling Errors](https://axios-http.com/docs/handling_errors)
+- Prefix API tetap `/api/v1`. Kontrak terperinci ada di [KONTRAK_API.md](docs/KONTRAK_API.md).
+- Uang baru: DECIMAL(15,2), currency IDR, JSON berupa string desimal dua angka. DECIMAL(10,2) pada alokasi lama dipertahankan sampai ada migrasi perluasan tersendiri.
+- Nama kolom lama tidak diganti: `id_user` pada transactions dan `user_id` pada budget tetap. DTO baru memakai `user_id` yang diisi server.
+- Tanggal bisnis baru: YYYY-MM-DD dalam Asia/Jakarta. Timestamp API: ISO 8601 UTC. Backfill tanggal transaksi lama menunggu audit zona waktu DB, tidak ditebak.
+- Migrasi berikutnya harus additive, bernomor dan dicatat sekali. Tambah tabel/kolom nullable, backfill terukur, baru constraint. Tidak memakai DROP/TRUNCATE/reset seed/sync(force:true).
+- `scripts/migrate.js` existing adalah bootstrap CREATE IF NOT EXISTS, belum runner migrasi berversi dan belum mengubah tabel lama. Runner upgrade dan backup/restore uji adalah pekerjaan Kenneth.
+- Data lama tidak mendapat saldo token hadiah tanpa keputusan tim; baseline M1 tidak menjalankan SQL apa pun ke DB pengguna.
 
+## 6. Satu acuan UI dan perubahan kontrak
 
-## Dana — Transactions, relasi 1:N, ORM dan raw query
+[KONTRAK_UI.md](docs/KONTRAK_UI.md), [wireframe](frontend/wireframes.html), dan [tokens.css](frontend/src/styles/tokens.css) adalah sumber bersama.
+Setiap usulan perubahan field/relasi/response/UI shell masuk dokumen ini dan kontrak terkait dalam PR yang sama. PIC menulis alasan, dampak endpoint/Postman/migrasi/UI, reviewer menyetujui sebelum merge.
+Endpoint existing dan planned dibedakan; nama endpoint rencana tidak berarti endpoint sudah aktif.
 
-Satu User memiliki banyak Transactions melalui `users.id` ke `transactions.id_user`.
-Satu Category memiliki banyak Transactions melalui `categories.id` ke `transactions.id_category`.
-Registrasi relasi berada di `src/models/index.js`: User/Category memakai hasMany,
-sedangkan Transaction memakai belongsTo. Foreign key SQL menguatkan hubungan tersebut.
+## 7. Tinjauan tim yang masih diperlukan
 
-Lima endpoint wajib Dana adalah POST /transactions, GET /transactions,
-GET /categories/:id/transactions, PATCH /transactions/:id dan DELETE /transactions/:id,
-semuanya dengan prefix /api/v1. POST memberikan 201 dan Location. PATCH hanya menerima
-nominal/catatan; ID referensi tidak dapat dipindahkan melalui PATCH ini.
+| Anggota | Bagian yang diperiksa | Status |
+|---|---|---|
+| Kenneth | ERD, N:M, migrasi, wallet, tokens UI | Belum ditinjau |
+| Bryan | Auth, pembelian, ownership, login/register | Belum ditinjau |
+| Dana | Income, AI usage, recurring, formulir | Belum ditinjau |
+| Rafael | 30 endpoint, laporan/wish, UI dashboard, regression | Belum ditinjau |
 
-GET /transactions?mode=orm memakai findAll dan include ke Category/User.
-ORM memudahkan penggunaan relasi, Op.like, Op.gte, Op.lte, pagination, dan penyusunan
-query tanpa menulis JOIN secara manual. Kekurangannya, bentuk SQL bergantung pada
-pemetaan dan opsi Sequelize, sehingga perlu diperiksa saat optimasi.
-
-GET /transactions?mode=raw memakai sequelize.query dengan JOIN eksplisit dan replacements.
-Raw query memberi kendali atas kolom dan struktur SQL, tetapi penulis bertanggung jawab
-menjaga JOIN, filter soft delete, serta parameter tetap aman. Nilai pencarian dan batas
-nominal memakai replacements. Arah sorting dibatasi Joi menjadi asc/desc sebelum
-interpolasi karena kata kunci SQL tidak dapat dipasang sebagai parameter nilai biasa.
-
-Kedua versi disediakan untuk memenuhi perbandingan ORM dan raw pada tugas. Keduanya
-menghasilkan bentuk respons yang sama: nominal berupa string, category/user berupa
-objek terpilih, dan user yang soft-deleted ditampilkan sebagai null. Ini dua versi
-operasi baca, bukan menulis transaksi dua kali. Endpoint konversi kurs adalah fitur
-tambahan nomor 5, di luar lima endpoint inti Dana.
-
-## Pembaruan SQL Budget
-
-Gabungan.sql kini juga membuat `budget` dan `budget_categories`. Pivot memiliki
-allocated_amount, foreign key ke Budget/Category, serta batas unik pasangan
-(budget_id, category_id). Budget memiliki batas unik (user_id, month, year).
-Penghapusan Budget menghapus alokasinya melalui CASCADE; kategori yang masih dipakai
-pivot ditahan RESTRICT. Soft delete User tetap mempertahankan data historis.
-
-Modul Budget aktif melalui registrasi model/router utama. Budget.user_id memakai
-DataTypes.INTEGER, sama dengan users.id. Kolom pivot adalah category_id. Joi memvalidasi
-bulan, tahun, ID, alokasi, dan kelengkapan PUT. Pesan tersedia pada .messages() di budgetSchemas.js.
-
-## Rafael — Budget dan relasi N:M
-
-Budget belongsTo User. Budget belongsToMany Category melalui Budget_categories;
-Category memiliki asosiasi balik belongsToMany Budget. Pivot menyimpan allocated_amount.
-GET list/detail memakai include Category dengan through.attributes allocated_amount,
-sehingga kategori dan alokasinya tersedia pada satu SELECT JOIN. Tidak ada query kategori
-per item dalam loop (N+1). Tes telah memeriksa SQL hasil Sequelize, bukan eksekusi MySQL nyata.
-
-Lima endpoint aktif: POST /budgets, GET /budgets, GET /budgets/:id,
-PUT /budgets/:id, DELETE /budgets/:id, semuanya dengan prefiks /api/v1.
-Periode user/month/year duplikat ditolak 409, dengan pengecekan controller dan unique SQL.
-POST, PUT, dan DELETE memakai transaksi database. PUT mengganti alokasi secara atomik;
-kegagalan penulisan pivot membatalkan perubahan parent dan pivot.
-
-Bukti eksekusi satu SELECT JOIN dari MySQL belum tersedia. Jalankan
-node scripts/bukti-budget-join.js untuk menghasilkan dokumen BUKTI-BUDGET-JOIN-<waktu>.md.
-Dokumen tersebut menjadi lampiran bukti aktual; kode atau tes simulasi bukan log MySQL nyata.
+Harga katalog, provider/model AI, biaya cicilan, serta akses bank belum final. Rancangan boleh dirinci pada milestone berikutnya; keputusan yang mengubah kontrak tidak dibuat diam-diam oleh satu anggota.
+Referensi teknis: [Sequelize M:N](https://sequelize.org/docs/v6/advanced-association-concepts/advanced-many-to-many/) dan [Midtrans notification](https://docs.midtrans.com/docs/https-notification-webhooks). Tidak ada integrasi baru pada M1.

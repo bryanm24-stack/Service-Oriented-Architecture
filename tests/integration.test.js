@@ -356,11 +356,10 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
 
         for (const [method, url, allow] of [
             ["DELETE", "/api/v1/transactions", "GET, POST"],
-            ["PUT", "/api/v1/transactions/1", "PATCH, DELETE"],
+            ["POST", "/api/v1/transactions/1", "GET, PUT, PATCH, DELETE"],
             ["POST", "/api/v1/categories/1/transactions", "GET"],
             ["DELETE", "/api/v1/users", "GET, POST"],
-            ["PUT", "/api/v1/categories/1", "GET, PATCH, DELETE"],
-            ["DELETE", "/api/v1/buku", "GET, POST"],
+            ["POST", "/api/v1/categories/1", "GET, PUT, PATCH, DELETE"],
         ]) assert.equal((await request(method, url, 405)).headers.get("allow"), allow);
 
         await request("DELETE", "/api/v1/transactions/1", 200);
@@ -384,7 +383,7 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
 test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
     assert.equal(require("../config/database"), db.sequelize);
 
-    for (const name of ["User", "Category", "Transaction", "Buku", "Karakter"]) {
+    for (const name of ["User", "Category", "Transaction", "Budget", "BudgetCategory"]) {
         assert.equal(db[name].sequelize, db.sequelize);
     }
 
@@ -414,7 +413,7 @@ test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
 
     const sql = fs.readFileSync(path.join(__dirname, "../sql/Gabungan.sql"), "utf8");
 
-    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 8);
+    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 5);
 
     assert.match(sql, /id_category INT UNSIGNED NOT NULL/);
 
