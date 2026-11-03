@@ -136,7 +136,7 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
             options
         };
 
-        const q = options.replacements;
+        const q = options.bind;
 
         return [...transactions.values()].filter(row =>
         (q.categoryId === undefined || row.id_category === q.categoryId) &&
@@ -305,7 +305,7 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
 
         assert(lastRaw.sql.includes("u.deletedAt IS NULL"));
 
-        assert.equal(lastRaw.options.replacements.search, "%Makan%");
+        assert.equal(lastRaw.options.bind.search, "%Makan%");
 
         assert.equal(orm.body.data[0].user.password, undefined);
 
@@ -413,7 +413,7 @@ test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
 
     const sql = fs.readFileSync(path.join(__dirname, "../sql/Gabungan.sql"), "utf8");
 
-    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 5);
+    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 8);
 
     assert.match(sql, /id_category INT UNSIGNED NOT NULL/);
 

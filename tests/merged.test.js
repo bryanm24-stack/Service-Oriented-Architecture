@@ -9,29 +9,41 @@ test('Migrasi gabungan memilih DB_NAME dan tidak berpindah ke database impor man
 
     try {
         for (const name of [undefined, 'uji_budget_khusus']) {
+          for (const roleExists of [false, true]) {
             if (name === undefined) delete process.env.DB_NAME;
             else process.env.DB_NAME = name;
 
             const calls = [];
             let closed = false;
             mysql.createConnection = async () => ({
-                query: async sql => calls.push(sql),
+                query: async sql => {
+                    calls.push(sql);
+                    if (sql.startsWith('SHOW COLUMNS')) return [roleExists ? [{ Field: 'role' }] : []];
+                    return [[], []];
+                },
                 end: async () => { closed = true; }
             });
 
             await migrate();
 
             const expected = name || 'asisten_keuangan';
-            assert.equal(calls.length, 3);
+            assert.equal(calls.length, roleExists ? 4 : 5);
             assert.match(calls[0], new RegExp('CREATE DATABASE IF NOT EXISTS `' + expected + '`'));
             assert.equal(calls[1], 'USE `' + expected + '`');
             assert.doesNotMatch(calls[2], /^\s*(USE|CREATE DATABASE)\b/im);
             const tables = [...calls[2].matchAll(/^CREATE TABLE IF NOT EXISTS (\w+)/gm)].map(match => match[1]);
-            assert.equal(tables.length, 5);
-            assert.equal(new Set(tables).size, 5);
+            assert.equal(tables.length, 8);
+            assert.equal(new Set(tables).size, 8);
             assert(tables.indexOf('users') < tables.indexOf('budget'));
             assert(tables.indexOf('budget') < tables.indexOf('budget_categories'));
+            assert(tables.indexOf('users') < tables.indexOf('api_clients'));
+            assert(tables.indexOf('api_tiers') < tables.indexOf('api_clients'));
+            assert(tables.indexOf('api_clients') < tables.indexOf('api_log'));
+            assert.doesNotMatch(calls.join('\n'), /^\s*(DROP|TRUNCATE|DELETE|REPLACE)\b/im);
+            assert.equal(calls[3], "SHOW COLUMNS FROM users LIKE 'role'");
+            if (!roleExists) assert.match(calls[4], /^ALTER TABLE users ADD COLUMN role /);
             assert(closed);
+          }
         }
     } finally {
         mysql.createConnection = originalConnect;

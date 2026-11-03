@@ -90,7 +90,7 @@ const installStore = () => {
         catch (failure) { state = before; throw failure; }
     });
     replace(db.sequelize, 'query', async (sql, options) => {
-        const q = options.replacements;
+        const q = options.bind;
         if (sql.includes('SUM(nominal)')) {
             const totals = new Map();
             for (const row of state.transactions) {

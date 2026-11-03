@@ -1,13 +1,17 @@
 # Rancangan ProjectSOA — kontrak M1
 
+Pembaruan 3 November 2026: tampilan aktif memakai Laravel 13 + Blade/PWA pada laravel-web; Node tetap API dan pengelola MySQL. Antarmuka/alur login/register menunggu Dana, dengan koordinasi PIC auth backend. PWA tidak menjadi pengganti perlindungan SQL injection; raw SQL Node memakai bind parameter. Preview web dibatasi environment local/testing sampai auth/ownership selesai.
+
+
 Status: **draft kontrak bersama v0.1**, siap ditinjau Kenneth, Bryan, Dana, Rafael. Tidak menyatakan empat anggota sudah menyetujui.
 Sumber awal adalah arsip Service-Oriented-Architecture.zip, disalin sebagai ProjectSOA.
 Fokus M1 adalah baseline, relasi, kontrak API, pembagian PIC dan satu acuan UI. Tidak menambah pembayaran, AI, autentikasi, scheduler, atau migrasi bisnis baru.
 
 ## 1. Yang sudah berjalan dan yang baru dirancang
 
-Existing: 30 endpoint, 5 model, CRUD User/Category/pengeluaran/Budget, N:M Budget–Category, summary, konversi kurs, serta pembacaan status order Midtrans.
-Belum ada: login/JWT, pembelian paket token, wallet/ledger, pemanggilan AI, pemasukan, wish/cicilan, recurring, PDF dan koneksi bank.
+Existing setelah merge 3 November 2026: 30 endpoint, 8 model (5 keuangan serta ApiClient/ApiTier/ApiLog), CRUD User/Category/pengeluaran/Budget, N:M Budget–Category, summary, konversi kurs, serta pembacaan status order Midtrans.
+File draft auth dari branch-baru belum terpasang pada index.js. Tiga model API telah digabung, tetapi belum mempunyai endpoint penerbitan key atau middleware rate limit. Tidak ada implementasi pembayaran/AI baru dalam resolusi merge.
+Belum aktif: login/JWT, pembelian paket token, wallet/ledger, pemanggilan AI, pemasukan, wish/cicilan, recurring, PDF dan koneksi bank.
 Adapter Midtrans existing hanya membaca status order dari pemetaan environment. Ini belum menjadi sistem pembelian atau bukti saldo token.
 
 | Fitur rencana | Aturan awal | PIC utama |
@@ -94,8 +98,8 @@ Pilihan BIGINT untuk token harus tetap membatasi JSON integer pada Number.MAX_SA
 - Nama kolom lama tidak diganti: `id_user` pada transactions dan `user_id` pada budget tetap. DTO baru memakai `user_id` yang diisi server.
 - Tanggal bisnis baru: YYYY-MM-DD dalam Asia/Jakarta. Timestamp API: ISO 8601 UTC. Backfill tanggal transaksi lama menunggu audit zona waktu DB, tidak ditebak.
 - Migrasi berikutnya harus additive, bernomor dan dicatat sekali. Tambah tabel/kolom nullable, backfill terukur, baru constraint. Tidak memakai DROP/TRUNCATE/reset seed/sync(force:true).
-- `scripts/migrate.js` existing adalah bootstrap CREATE IF NOT EXISTS, belum runner migrasi berversi dan belum mengubah tabel lama. Runner upgrade dan backup/restore uji adalah pekerjaan Kenneth.
-- Data lama tidak mendapat saldo token hadiah tanpa keputusan tim; baseline M1 tidak menjalankan SQL apa pun ke DB pengguna.
+- `scripts/migrate.js` adalah bootstrap CREATE IF NOT EXISTS; hasil merge menambahkan upgrade guarded untuk users.role jika kolom belum ada. Ini belum runner migrasi berversi umum. Runner upgrade lanjutan dan backup/restore uji tetap pekerjaan Kenneth.
+- Data lama tidak mendapat saldo token hadiah tanpa keputusan tim; baseline M1 maupun pemeriksaan merge tidak menjalankan SQL ke DB pengguna. Runner hasil merge hanya menyediakan bootstrap tabel tambahan dan guarded upgrade users.role.
 
 ## 6. Satu acuan UI dan perubahan kontrak
 

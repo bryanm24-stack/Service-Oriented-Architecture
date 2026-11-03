@@ -71,6 +71,8 @@ const createTransaction = async (req, res) => {
 const listTransactions = async (req, res, forcedMode, parentType = "category") => {
     const query = parse(transactionQuery, req.query);
     const { search, sort, limit, offset, minNominal, maxNominal } = query;
+    // Query structure comes only from fixed application-owned choices.
+    const sortDirection = { asc: "ASC", desc: "DESC" }[sort];
 
     if (minNominal !== undefined && maxNominal !== undefined && Number(minNominal) > Number(maxNominal)) {
         return res.status(400).json({
@@ -98,41 +100,41 @@ const listTransactions = async (req, res, forcedMode, parentType = "category") =
 
     if (mode === "raw") {
         const clauses = [];
-        const replacements = {
+        const bind = {
             limit,
             offset
         };
 
         if (search) {
-            clauses.push("t.catatan LIKE :search");
+            clauses.push("t.catatan LIKE $search");
 
-            replacements.search = `%${search}%`;
+            bind.search = `%${search}%`;
         }
 
         if (categoryId !== undefined) {
-            clauses.push("t.id_category = :categoryId");
+            clauses.push("t.id_category = $categoryId");
 
-            replacements.categoryId = categoryId;
+            bind.categoryId = categoryId;
         }
 
         if (userId !== undefined) {
-            clauses.push("t.id_user = :userId");
-            replacements.userId = userId;
+            clauses.push("t.id_user = $userId");
+            bind.userId = userId;
         }
 
         if (minNominal !== undefined) {
-            clauses.push("t.nominal >= :minNominal");
+            clauses.push("t.nominal >= $minNominal");
 
-            replacements.minNominal = minNominal;
+            bind.minNominal = minNominal;
         }
 
         if (maxNominal !== undefined) {
-            clauses.push("t.nominal <= :maxNominal");
+            clauses.push("t.nominal <= $maxNominal");
 
-            replacements.maxNominal = maxNominal;
+            bind.maxNominal = maxNominal;
         }
 
-        // sort sudah dibatasi Joi menjadi asc/desc; nilai lain memakai replacements.
+        // sort sudah dibatasi Joi menjadi asc/desc; nilai lain memakai bind.
         const sql = `SELECT t.id_transaction, t.id_category, t.id_user, t.nominal,
       t.catatan, t.createdAt, t.updatedAt,
       c.id AS category_id, c.name AS category_name, c.icon AS category_icon,
@@ -141,10 +143,10 @@ const listTransactions = async (req, res, forcedMode, parentType = "category") =
       LEFT JOIN categories AS c ON c.id = t.id_category
       LEFT JOIN users AS u ON u.id = t.id_user AND u.deletedAt IS NULL
       ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""}
-      ORDER BY t.nominal ${sort.toUpperCase()}, t.id_transaction ASC
-      LIMIT :limit OFFSET :offset`;
+      ORDER BY t.nominal ${sortDirection}, t.id_transaction ASC
+      LIMIT $limit OFFSET $offset`;
         const raw = await sequelize.query(sql, {
-            replacements,
+            bind,
             type: QueryTypes.SELECT
         });
 
@@ -194,7 +196,7 @@ const listTransactions = async (req, res, forcedMode, parentType = "category") =
             attributes: transactionFields,
             where,
             include: includes,
-            order: [["nominal", sort.toUpperCase()], ["id_transaction", "ASC"]],
+            order: [["nominal", sortDirection], ["id_transaction", "ASC"]],
             limit,
             offset,
         });

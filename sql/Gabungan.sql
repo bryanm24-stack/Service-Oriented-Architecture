@@ -1,5 +1,6 @@
 -- DATABASE ASISTEN KEUANGAN
--- Lima tabel aktif: users, categories, transactions, budget, budget_categories.
+-- Lima tabel keuangan: users, categories, transactions, budget, budget_categories.
+-- Merge menambahkan api_tiers, api_clients dan api_log; belum ada endpoint API key.
 -- Tidak menyertakan tabel dan seed template buku, karakter, atau penulis.
 -- CREATE TABLE IF NOT EXISTS tidak mengubah struktur tabel yang sudah ada.
 -- Impor manual memakai asisten_keuangan; npm run db:migrate mengikuti DB_NAME.
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
+  role VARCHAR(50) NOT NULL DEFAULT 'user',
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   deletedAt DATETIME NULL DEFAULT NULL
@@ -100,6 +102,53 @@ CREATE TABLE IF NOT EXISTS budget_categories (
 
     UNIQUE KEY uq_budget_category (budget_id, category_id),
     INDEX idx_budget_categories_category (category_id)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- MODEL API KEY DARI OCTAVIUS (additive, tanpa reset tabel lama)
+-- users.id bertipe signed; FK API client wajib mengikuti tipe tersebut.
+-- Belum ada seed paket/harga atau endpoint penerbitan/rate limit API key.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS api_tiers (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  rate_limit INT UNSIGNED NOT NULL,
+  window_seconds INT UNSIGNED NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_name (name)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS api_clients (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  api_tier_id INT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  key_hash VARCHAR(255) NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  revoked_at DATETIME NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_api_clients_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_api_clients_tier FOREIGN KEY (api_tier_id)
+    REFERENCES api_tiers(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  UNIQUE KEY uq_user_api_tier_name (user_id, api_tier_id, name),
+  INDEX idx_api_clients_tier (api_tier_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS api_log (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  api_client_id INT UNSIGNED NOT NULL,
+  endpoint VARCHAR(255) NOT NULL,
+  request_method VARCHAR(10) NOT NULL,
+  status_code INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_api_log_client FOREIGN KEY (api_client_id)
+    REFERENCES api_clients(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  INDEX idx_api_log_client_created (api_client_id, created_at)
 ) ENGINE=InnoDB;
 
 -- ============================================================

@@ -1,38 +1,5 @@
-# Frontend — acuan struktur M1
+# Arsip wireframe M1
 
-M1 hanya menyediakan wireframe dan token desain, belum aplikasi React dan belum mengirim request API.
-Buka `wireframes.html` langsung di browser. Gunakan [kontrak UI](../docs/KONTRAK_UI.md) sebagai acuan tunggal.
+Folder ini mempertahankan wireframe statis login/register/dashboard/tabel-form sebagai referensi desain. Aplikasi aktif sekarang memakai Laravel 13 + Blade di [laravel-web](../laravel-web), dengan API Node tetap di folder utama. Rencana React/Vite sebelumnya telah diganti atas arahan pengguna.
 
-Struktur target setelah persetujuan (file/folder selain tokens dan wireframes belum diimplementasikan):
-
-```text
-frontend/
-  src/
-    app/             routing dan providers
-    layouts/         AppShell dan PublicLayout
-    components/      komponen bersama, tanpa request bisnis
-    features/
-      auth/
-      dashboard/
-      transactions/
-      incomes/
-      budgets/
-      tokens/
-      ai/
-      wishes/
-      recurring/
-      reports/
-    lib/
-      api/           satu client, adapter legacy/new, auth dan error parser
-      format/        money, tanggal dan token
-    types/           DTO dan kontrak API bersama
-    styles/
-      tokens.css     sudah tersedia sebagai acuan
-  wireframes.html    empat layar referensi statis
-```
-
-Pilihan awal: React + Vite + TypeScript. Instalasi dan file app dilakukan setelah kontrak ditinjau; tidak ada package frontend palsu pada M1.
-Feature boleh mengimpor components/lib/types, bukan menyalin AppShell atau mengimpor internal feature lain.
-Semua URL backend melewati satu baseURL: origin + /api/v1. Origin adalah konfigurasi publik; key Midtrans/AI/Bank tidak boleh memakai variabel frontend VITE_*.
-DTO legacy: preserve id_transaction/budget_id dan response existing, lalu normalisasi di adapter. DTO baru memakai kontrak docs/KONTRAK_API.md.
-Wireframe tidak memiliki submit aktif atau koneksi bank/AI. Tautan Login/Register/Dashboard/Pengeluaran hanya berpindah contoh; menu lainnya masih berupa label rancangan. Menu mobile memakai details/summary tanpa JavaScript. HTML diindentasi 2 spasi, CSS dibagi per komponen dan breakpoint. Ikon SVG lokal dapat dipakai ulang; tidak ada font atau asset CDN.
+Buka wireframes.html langsung di browser untuk melihat rancangan lama. Halaman di sini tidak mengirim request dan bukan aplikasi aktif. Login/register tetap menunggu Dana. Sumber gaya aktif untuk implementasi baru adalah laravel-web/public/assets/app.v1.css; shell/komponen dipakai bersama di resources/views Laravel.
