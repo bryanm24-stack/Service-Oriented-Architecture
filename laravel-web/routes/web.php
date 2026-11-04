@@ -20,4 +20,13 @@ Route::middleware(EnsureLocalPreview::class)->group(function (): void {
     Route::get('/anggaran/{id}', [BudgetController::class, 'show'])->whereNumber('id')->name('budgets.show');
     Route::get('/kategori', CategoryController::class)->name('categories.index');
     Route::get('/aplikasi', AppController::class)->name('application');
+
+    // Halaman Login & Register
+    Route::get('/login', function () {
+        return view('login');
+    })->name('login');
+
+    Route::get('/register', function () {
+        return view('register');
+    })->name('register');
 });
