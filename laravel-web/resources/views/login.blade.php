@@ -57,7 +57,8 @@
             const password = document.getElementById('password').value;
 
             try {
-                const response = await fetch('/api/auth/login', {
+                // Sesuaikan port backend Express Anda jika berbeda (misal: 3000)
+                const response = await fetch('http://localhost:3000/api/auth/login', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -74,7 +75,7 @@
 
                 sessionStorage.setItem('accessToken', data.accessToken);
                 alert('Login berhasil!');
-                window.location.href = '/dashboard';
+                window.location.href = '/';
             } catch (err) {
                 alertBox.textContent = err.message;
                 alertBox.classList.remove('hidden');

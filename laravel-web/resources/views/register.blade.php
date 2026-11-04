@@ -77,7 +77,8 @@
             }
 
             try {
-                const response = await fetch('/api/auth/register', {
+                // Sesuaikan port backend Express Anda jika berbeda (misal: 3000)
+                const response = await fetch('http://localhost:3000/api/auth/register', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
