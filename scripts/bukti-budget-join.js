@@ -3,37 +3,45 @@ const root = path.resolve(__dirname, '..');
 require('dotenv').config({ path: path.join(root, '.env') });
 
 const {
-    EvidenceError,
-    captureBudget,
-    renderEvidence,
-    saveEvidence
+  EvidenceError,
+  captureBudget,
+  renderEvidence,
+  saveEvidence,
 } = require('./lib/budget-evidence');
 
 const main = async () => {
-    const app = require('../index');
-    const { sequelize } = require('../src/models');
+  const app = require('../index');
+  const { sequelize } = require('../src/models');
 
-    try {
-        const evidence = await captureBudget(app, sequelize);
-        const report = renderEvidence(evidence);
-        const saved = await saveEvidence(root, report);
+  try {
+    if (!process.env.BUDGET_EVIDENCE_TOKEN)
+      throw new EvidenceError(
+        'Isi BUDGET_EVIDENCE_TOKEN dengan JWT user uji yang mempunyai Budget.',
+      );
+    const evidence = await captureBudget(app, sequelize, process.env.BUDGET_EVIDENCE_TOKEN);
+    const report = renderEvidence(evidence);
+    const saved = await saveEvidence(root, report);
 
-        console.log(`[BUKTI] HTTP 200; ${evidence.budgetCount} Budget; ${evidence.selectCount} SELECT JOIN.`);
-        console.log('[BUKTI] Log aktual telah dimasukkan ke RANCANGAN.md.');
-        console.log(`[BUKTI] Salinan: ${path.basename(saved.evidenceFile)}`);
-        console.log(`[BUKTI] Cadangan: backup-bukti-sql/${path.basename(saved.backup)}`);
-    } finally {
-        await sequelize.close();
-    }
+    console.log(
+      `[BUKTI] HTTP 200; ${evidence.budgetCount} Budget; ${evidence.selectCount} SELECT JOIN.`,
+    );
+    console.log('[BUKTI] Log aktual telah dimasukkan ke RANCANGAN.md.');
+    console.log(`[BUKTI] Salinan: ${path.basename(saved.evidenceFile)}`);
+    console.log(`[BUKTI] Cadangan: backup-bukti-sql/${path.basename(saved.backup)}`);
+  } finally {
+    await sequelize.close();
+  }
 };
 
 if (require.main === module) {
-    main().catch(error => {
-        console.error(error instanceof EvidenceError
-            ? `[BUKTI] ${error.message}`
-            : '[BUKTI] Gagal merekam/menyimpan bukti. Periksa MySQL, konfigurasi .env, RANCANGAN.md, dan izin tulis folder.');
-        process.exitCode = 1;
-    });
+  main().catch((error) => {
+    console.error(
+      error instanceof EvidenceError
+        ? `[BUKTI] ${error.message}`
+        : '[BUKTI] Gagal merekam/menyimpan bukti. Periksa MySQL, konfigurasi .env, RANCANGAN.md, dan izin tulis folder.',
+    );
+    process.exitCode = 1;
+  });
 }
 
 module.exports = main;

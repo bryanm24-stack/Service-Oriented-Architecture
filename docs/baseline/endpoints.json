@@ -1,332 +1,158 @@
 [
   {
-    "method": "GET",
-    "path": "/api/v1/users",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "getAllUsers",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "method": "POST",
+    "path": "/api/v1/auth/register"
   },
   {
     "method": "POST",
-    "path": "/api/v1/users",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "createUser",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "GET",
-    "path": "/api/v1/users/:id/transactions",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "getTransactionsByUser",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "GET",
-    "path": "/api/v1/users/:id/budgets",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "getBudgetsByUser",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "GET",
-    "path": "/api/v1/users/:id/subscription-status",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "getUserSubscription",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "GET",
-    "path": "/api/v1/users/:id",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "getUserById",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "PUT",
-    "path": "/api/v1/users/:id",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "updateUser",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "PATCH",
-    "path": "/api/v1/users/:id",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "patchUser",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "DELETE",
-    "path": "/api/v1/users/:id",
-    "module": "Users",
-    "route_file": "src/routes/userRoutes.js",
-    "controller_file": "src/controllers/UserController.js",
-    "handler": "deleteUser",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "GET",
-    "path": "/api/v1/categories",
-    "module": "Categories",
-    "route_file": "src/routes/category.js",
-    "controller_file": "src/controllers/category.js",
-    "handler": "getCategories",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/auth/login"
   },
   {
     "method": "POST",
-    "path": "/api/v1/categories",
-    "module": "Categories",
-    "route_file": "src/routes/category.js",
-    "controller_file": "src/controllers/category.js",
-    "handler": "createCategory",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/auth/refresh"
   },
   {
     "method": "GET",
-    "path": "/api/v1/categories/:id",
-    "module": "Categories",
-    "route_file": "src/routes/category.js",
-    "controller_file": "src/controllers/category.js",
-    "handler": "getCategoryById",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "PUT",
-    "path": "/api/v1/categories/:id",
-    "module": "Categories",
-    "route_file": "src/routes/category.js",
-    "controller_file": "src/controllers/category.js",
-    "handler": "replaceCategory",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "PATCH",
-    "path": "/api/v1/categories/:id",
-    "module": "Categories",
-    "route_file": "src/routes/category.js",
-    "controller_file": "src/controllers/category.js",
-    "handler": "updateCategory",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "DELETE",
-    "path": "/api/v1/categories/:id",
-    "module": "Categories",
-    "route_file": "src/routes/category.js",
-    "controller_file": "src/controllers/category.js",
-    "handler": "deleteCategory",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "GET",
-    "path": "/api/v1/transactions",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "getTransactions",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/auth/refresh"
   },
   {
     "method": "POST",
-    "path": "/api/v1/transactions",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "createTransaction",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/auth/logout"
   },
   {
     "method": "GET",
-    "path": "/api/v1/transactions/:id/conversion",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionConversion.js",
-    "handler": "convertTransaction",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/auth/me"
   },
   {
     "method": "GET",
-    "path": "/api/v1/categories/:id/transactions",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "getTransactionsByCategory",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/auth/profile"
   },
   {
     "method": "GET",
-    "path": "/api/v1/transactions/:id",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "getTransactionById",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "PUT",
-    "path": "/api/v1/transactions/:id",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "replaceTransaction",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "PATCH",
-    "path": "/api/v1/transactions/:id",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "updateTransaction",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
-  },
-  {
-    "method": "DELETE",
-    "path": "/api/v1/transactions/:id",
-    "module": "Transactions",
-    "route_file": "src/routes/transactionRoutes.js",
-    "controller_file": "src/controllers/transactionControllers.js",
-    "handler": "deleteTransaction",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/transactions/summary"
   },
   {
     "method": "GET",
-    "path": "/api/v1/budgets",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "getAllBudgets",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/dashboard/summary"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/transactions"
   },
   {
     "method": "POST",
-    "path": "/api/v1/budgets",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "createBudget",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/transactions"
   },
   {
     "method": "GET",
-    "path": "/api/v1/budgets/:id/summary",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budgetSummary.js",
-    "handler": "getBudgetSummary",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/transactions/:id/conversion"
   },
   {
     "method": "GET",
-    "path": "/api/v1/budgets/:id",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "getBudgetById",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/categories/:id/transactions"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/transactions/:id"
   },
   {
     "method": "PUT",
-    "path": "/api/v1/budgets/:id",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "updateBudget",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/transactions/:id"
   },
   {
     "method": "PATCH",
-    "path": "/api/v1/budgets/:id",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "patchBudget",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/transactions/:id"
   },
   {
     "method": "DELETE",
-    "path": "/api/v1/budgets/:id",
-    "module": "Budgets",
-    "route_file": "src/routes/budget.js",
-    "controller_file": "src/controllers/budget.js",
-    "handler": "deleteBudget",
-    "auth_current": "none",
-    "status": "existing",
-    "postman_covered": true
+    "path": "/api/v1/transactions/:id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/users"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users/:id/transactions"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users/:id/budgets"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users/:id/subscription-status"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/users/:id"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/users/:id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/users/:id"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/users/:id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/categories"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/categories"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/categories/:id"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/categories/:id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/categories/:id"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/categories/:id"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/budgets"
+  },
+  {
+    "method": "POST",
+    "path": "/api/v1/budgets"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/budgets/:id/summary"
+  },
+  {
+    "method": "GET",
+    "path": "/api/v1/budgets/:id"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/v1/budgets/:id"
+  },
+  {
+    "method": "PATCH",
+    "path": "/api/v1/budgets/:id"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/v1/budgets/:id"
   }
 ]

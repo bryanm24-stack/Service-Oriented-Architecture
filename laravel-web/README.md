@@ -1,18 +1,9 @@
-# ProjectSOA mobile web
+# Tampilan ProjectSOA
 
-Laravel 13 + Blade sebagai tampilan mobile/PWA dan HTTP gateway menuju Node.js. Panduan lengkap berada di [README proyek](../README.md).
+Laravel 13 + Blade/PWA, terhubung ke API Express yang sama. Login/register/logout aktif. Ikuti [README root](../README.md) untuk instalasi, konfigurasi MySQL Node, migrasi, login dan pemeriksaan SQLyog.
 
-```powershell
-composer install
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
-php artisan key:generate
-php artisan serve --host=127.0.0.1 --port=8000
-```
+`composer install`, salin `.env.example` hanya jika `.env` belum ada, `php artisan key:generate`, lalu `php artisan serve --host=127.0.0.1 --port=8000`. Tidak ada npm/Vite build atau tabel user Laravel kedua. Jalankan Node terpisah pada port 3001.
 
-Node harus dijalankan terpisah di port 3001 dengan database uji. Jangan menjalankan migrasi Laravel untuk membuat tabel bisnis/users. Tidak ada frontend NPM/Vite build; CSS/JS/ikon berada di public/.
+Halaman: `/login`, `/register`, `/app/dashboard`, `/app/transactions`, `/anggaran`, `/kategori`, `/aplikasi`. Seluruh halaman privat memakai EnsureApiAuthenticated; CurrentUserContext mengambil identitas dari sesi login. Flag preview tidak dipakai lagi. FinanceApi meneruskan Bearer JWT dari server dan AuthApi merotasi cookie refresh saat diperlukan.
 
-SOA_LOCAL_PREVIEW hanya berlaku pada environment local/testing. Login/register menunggu Dana. Tidak ada provider akun lokal atau route autentikasi Laravel. Data keuangan tidak dicache dan tidak ada antrean kirim offline.
-
-Komponen bersama: resources/views/layouts/app.blade.php, components/icon.blade.php, components/empty-state.blade.php dan partials/expenses.blade.php. Seluruh halaman memakai public/assets/app.v1.css dan app.v1.js. PreviewUserContext adalah titik penggantian identitas untuk integrasi auth berikutnya.
-
-Jalankan php artisan test untuk feature/unit test. Framework/dev tooling mengikuti composer.lock. Vendor, .env, session, cache Blade dan file log tidak disertakan dalam paket.
+Komponen/layout bersama berada di `resources/views/layouts`, `partials` dan `components`. Aset lokal di `public/assets`; login/register mengikuti warna/komponen yang sama. `php artisan test` untuk suite feature/unit.

@@ -1,52 +1,63 @@
 @extends('layouts.app')
-@section('title', 'Pengeluaran')
+@section('title', 'Transaksi')
 @section('content')
     <div class="page-heading">
         <div>
             <p class="eyebrow">Catatan keuangan</p>
-            <h1>Pengeluaran</h1>
-            <p class="subtitle">Semua pengeluaran, tersusun dalam satu tempat.</p>
-        </div><a class="button desktop-action" href="{{ route('expenses.create') }}"><x-icon name="plus" />Tambah
-            pengeluaran</a>
+            <h1>Transaksi</h1>
+            <p class="subtitle">Pemasukan dan pengeluaran, tersusun dalam satu tempat.</p>
+        </div><a class="button" href="{{ route('expenses.create') }}"><x-icon name="plus" />Tambah transaksi</a>
     </div>
-    <div class="list-summary"><span class="stat-icon"><x-icon name="receipt" /></span>
-        <div><span class="muted small">Total sesuai filter</span><strong>{{ \App\Support\Money::rupiah($total) }}</strong>
-        </div><span class="tag">{{ $expenses->total() }} transaksi</span>
-    </div>
+    @include('partials.cash-flow')
     <section class="panel">
-        <form class="filter-grid" method="get" action="{{ route('expenses.index') }}">
-            <div class="field"><label for="search">Cari catatan</label>
-                <div class="input-icon"><x-icon name="search" /><input id="search" name="search"
-                        value="{{ request('search') }}" placeholder="Contoh: makan siang" maxlength="255"></div>
-            </div>
-            <div class="field"><label for="category">Kategori</label><select id="category" name="category">
+        <form class="transaction-filters" method="get" action="{{ route('expenses.index') }}">
+            <div class="field"><label for="search">Cari catatan</label><input id="search" name="search"
+                    value="{{ $filters['search'] ?? '' }}" maxlength="255" placeholder="Contoh: makan siang"></div>
+            <div class="field"><label for="type">Jenis transaksi</label><select id="type" name="type">
+                    <option value="">Semua jenis</option>
+                    <option value="income" @selected(($filters['type'] ?? '') === 'income')>Pemasukan</option>
+                    <option value="expense" @selected(($filters['type'] ?? '') === 'expense')>Pengeluaran</option>
+                </select></div>
+            <div class="field"><label for="category_id">Kategori</label><select id="category_id" name="category_id">
                     <option value="">Semua kategori</option>
                     @foreach ($categories as $category)
-                        <option value="{{ $category['id'] }}" @selected((string) request('category') === (string) $category['id'])>{{ $category['name'] }}</option>
+                        <option value="{{ $category['id'] }}" @selected((string) ($filters['category_id'] ?? '') === (string) $category['id'])>{{ $category['name'] }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="field"><label for="period">Periode</label><input type="month" name="period" id="period"
-                    value="{{ $period }}" required></div><button class="button secondary filter-button"
-                type="submit"><x-icon name="filter" />Terapkan</button>
+            <div class="field"><label for="start_date">Dari tanggal</label><input type="date" name="start_date"
+                    id="start_date"
+                    value="{{ $filters['start_date'] ?? (isset($filters['period']) ? $filters['period'] . '-01' : '') }}"></div>
+            <div class="field"><label for="end_date">Sampai tanggal</label><input type="date" name="end_date"
+                    id="end_date"
+                    value="{{ $filters['end_date'] ??(isset($filters['period'])? \Carbon\CarbonImmutable::parse($filters['period'] . '-01')->endOfMonth()->format('Y-m-d'): '') }}">
+            </div>
+            <div class="field"><label for="sort_by">Urut berdasarkan</label><select id="sort_by" name="sort_by">
+                    <option value="createdAt" @selected(($filters['sort_by'] ?? 'createdAt') === 'createdAt')>Tanggal</option>
+                    <option value="nominal" @selected(($filters['sort_by'] ?? '') === 'nominal')>Nominal</option>
+                </select></div>
+            <div class="field"><label for="sort">Urutan</label><select id="sort" name="sort">
+                    <option value="desc" @selected(($filters['sort'] ?? 'desc') === 'desc')>Menurun / terbaru</option>
+                    <option value="asc" @selected(($filters['sort'] ?? '') === 'asc')>Menaik / terlama</option>
+                </select></div>
+            <div class="filter-actions"><button class="button secondary" type="submit"><x-icon
+                        name="filter" />Terapkan</button><a class="text-link"
+                    href="{{ route('expenses.index') }}">Reset</a></div>
         </form>
         @include('partials.expenses', ['items' => $expenses, 'allowActions' => true])
         @if ($expenses->total())
-            <div class="pagination"><span>{{ $expenses->firstItem() }}–{{ $expenses->lastItem() }} dari
+            <div class="pagination"><span>{{ $expenses->firstItem() ?? 0 }}–{{ $expenses->lastItem() ?? 0 }} dari
                     {{ $expenses->total() }}</span>
                 <div class="pagination-buttons">
-                    @if ($expenses->onFirstPage())
-                        <span class="pager disabled" aria-disabled="true"><x-icon name="left" /><span
-                            class="sr-only">Sebelumnya</span></span>@else<a class="pager"
-                            href="{{ $expenses->previousPageUrl() }}" aria-label="Halaman sebelumnya"><x-icon
+                    @if ($expenses->previousPageUrl())
+                        <a class="pager" href="{{ $expenses->previousPageUrl() }}" aria-label="Halaman sebelumnya"><x-icon
                                 name="left" /></a>
                     @endif
                     <span class="pager current" aria-current="page">
                         {{ $expenses->currentPage() }}</span>
-                    @if ($expenses->hasMorePages())
+                    @if ($expenses->nextPageUrl())
                         <a class="pager" href="{{ $expenses->nextPageUrl() }}" aria-label="Halaman berikutnya"><x-icon
-                            name="right" /></a>@else<span class="pager disabled" aria-disabled="true"><x-icon
-                                name="right" /><span class="sr-only">Berikutnya</span></span>
+                                name="right" /></a>
                     @endif
                 </div>
             </div>

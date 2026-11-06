@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   id_transaction INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_category INT UNSIGNED NOT NULL,
   id_user INT NOT NULL,
+  type ENUM('income','expense') NOT NULL DEFAULT 'expense',
   nominal DECIMAL(15, 2) NOT NULL,
   catatan TEXT NULL,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -170,3 +171,13 @@ WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Transportasi');
 INSERT INTO categories (name, icon)
 SELECT 'Hiburan', 'entertainment'
 WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Hiburan');
+
+-- Sesi W7: refresh token disimpan sebagai hash, bukan token mentah.
+CREATE TABLE IF NOT EXISTS auth_sessions (
+ id CHAR(36) PRIMARY KEY, user_id INT NOT NULL, token_hash VARCHAR(64) NOT NULL UNIQUE,
+ expires_at DATETIME NOT NULL, revoked_at DATETIME NULL,
+ createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ CONSTRAINT fk_auth_session_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+ INDEX idx_auth_session_user(user_id)
+) ENGINE=InnoDB;

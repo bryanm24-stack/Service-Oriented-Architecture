@@ -1,5 +1,5 @@
 module.exports = {
-    ...require('./resourceSchemas'),
-    ...require('./budgetSchemas'),
-    ...require('./integrationSchemas')
+  ...require('./resourceSchemas'),
+  ...require('./budgetSchemas'),
+  ...require('./integrationSchemas'),
 };

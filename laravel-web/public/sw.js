@@ -1,17 +1,17 @@
-"use strict";
-const CACHE_NAME = "projectsoa-pwa-shell-v1";
+'use strict';
+const CACHE_NAME = 'projectsoa-pwa-shell-v2-cashflow';
 const STATIC_ASSETS = [
-    "/offline.html",
-    "/assets/app.v1.css",
-    "/assets/app.v1.js",
-    "/icons/icon.svg",
-    "/icons/icon-192.png",
-    "/icons/icon-512.png",
-    "/icons/icon-maskable-512.png",
-    "/icons/apple-touch-icon.png",
+    '/offline.html',
+    '/assets/app.v1.css',
+    '/assets/app.v1.js',
+    '/icons/icon.svg',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png',
+    '/icons/icon-maskable-512.png',
+    '/icons/apple-touch-icon.png',
 ];
 const STATIC_PATHS = new Set(STATIC_ASSETS);
-self.addEventListener("install", (event) => {
+self.addEventListener('install', (event) => {
     event.waitUntil(
         caches
             .open(CACHE_NAME)
@@ -19,7 +19,7 @@ self.addEventListener("install", (event) => {
             .then(() => self.skipWaiting()),
     );
 });
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches
             .keys()
@@ -28,8 +28,7 @@ self.addEventListener("activate", (event) => {
                     names
                         .filter(
                             (name) =>
-                                name.startsWith("projectsoa-pwa-shell-") &&
-                                name !== CACHE_NAME,
+                                name.startsWith('projectsoa-pwa-shell-') && name !== CACHE_NAME,
                         )
                         .map((name) => caches.delete(name)),
                 ),
@@ -37,16 +36,14 @@ self.addEventListener("activate", (event) => {
             .then(() => self.clients.claim()),
     );
 });
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
-    if (request.method !== "GET" || url.origin !== self.location.origin) return;
-    if (request.mode === "navigate") {
+    if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+    if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request).catch(() =>
-                caches
-                    .open(CACHE_NAME)
-                    .then((cache) => cache.match("/offline.html")),
+                caches.open(CACHE_NAME).then((cache) => cache.match('/offline.html')),
             ),
         );
         return;

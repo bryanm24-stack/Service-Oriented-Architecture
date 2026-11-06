@@ -1,309 +1,185 @@
-const { Op, QueryTypes } = require("sequelize");
-const httpError = require("../utils/httpError");
-const { Transaction, Category, User, sequelize } = require("../models");
-const { parse, idSchema, transactionCreate, transactionPatch, transactionQuery, transactionPut } = require("../utils/validation/resourceSchemas");
-
-const transactionFields = ["id_transaction", "id_category", "id_user", "nominal", "catatan", "createdAt", "updatedAt"];
+const { QueryTypes } = require('sequelize');
+const { Transaction, Category, User, sequelize } = require('../models');
+const httpError = require('../utils/httpError');
+const { parse, idSchema } = require('../utils/validation/resourceSchemas');
+const schemas = require('../utils/validation/transactionSchemas');
+const { plan } = require('../services/transactionQuery');
+const { ownerWhere, createOwner, preserveOwner, assertUserPath } = require('../utils/access');
+const { fromCents, toCents } = require('../utils/money');
 const includes = [
-    {
-        model: Category,
-        as: "category",
-        attributes: ["id", "name", "icon"],
-        required: false
-    },
-    {
-        model: User,
-        as: "user",
-        attributes: ["id", "name", "email"],
-        required: false
-    },
+  { model: Category, as: 'category', attributes: ['id', 'name', 'icon'], required: false },
+  { model: User, as: 'user', attributes: ['id', 'name', 'email'], required: false },
 ];
-
-// Samakan kontrak hasil ORM dan RAW, termasuk DECIMAL dan user soft-deleted.
-const serialize = item => {
-    const row = typeof item.toJSON === "function" ? item.toJSON() : item;
-
-    return {
-        id_transaction: row.id_transaction,
-        id_category: row.id_category,
-        id_user: row.id_user,
-        nominal: String(row.nominal),
-        catatan: row.catatan,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        category: row.category ? {
-            id: row.category.id,
-            name: row.category.name,
-            icon: row.category.icon
-        } : null,
-        user: row.user ? {
-            id: row.user.id,
-            name: row.user.name,
-            email: row.user.email
-        } : null,
-    };
+const serialize = (value) => {
+  const t = value.toJSON ? value.toJSON() : value;
+  return {
+    id_transaction: t.id_transaction,
+    id_user: t.id_user,
+    id_category: t.id_category,
+    type: t.type,
+    nominal: fromCents(toCents(t.nominal)),
+    catatan: t.catatan,
+    createdAt: new Date(t.createdAt).toISOString(),
+    updatedAt: new Date(t.updatedAt).toISOString(),
+    category: t.category
+      ? { id: t.category.id, name: t.category.name, icon: t.category.icon }
+      : null,
+    user: t.user ? { id: t.user.id, name: t.user.name, email: t.user.email } : null,
+  };
 };
-
+const owned = async (req, options = {}) => {
+  const row = await Transaction.findOne({
+    where: { id_transaction: parse(idSchema, req.params.id), ...ownerWhere(req) },
+    ...options,
+  });
+  if (!row) throw httpError(404, 'Transaksi tidak ditemukan');
+  return row;
+};
+const references = async (userId, categoryId, transaction) => {
+  if (
+    !(await User.findByPk(userId, { transaction })) ||
+    !(await Category.findByPk(categoryId, { transaction }))
+  )
+    throw httpError(404, 'User atau kategori tidak ditemukan');
+};
 const createTransaction = async (req, res) => {
-    const value = parse(transactionCreate, req.body);
-
-    if (!await Category.findByPk(value.id_category)) {
-        return res.status(404).json({
-            message: "Category tidak ditemukan"
-        });
-    }
-
-    if (!await User.findByPk(value.id_user)) {
-        return res.status(404).json({
-            message: "User tidak ditemukan"
-        });
-    }
-
-    const transaction = await Transaction.create(value);
-
-    res.location(`/api/v1/transactions/${transaction.id_transaction}`).status(201).json({
-        success: true,
-        message: "Transaction berhasil dibuat",
-        data: transaction,
-    });
+  const value = parse(schemas.create, req.body);
+  value.id_user = createOwner(req, value);
+  await references(value.id_user, value.id_category);
+  const row = await Transaction.create(value);
+  const full = await Transaction.findByPk(row.id_transaction, { include: includes });
+  res
+    .location(`/api/v1/transactions/${row.id_transaction}`)
+    .status(201)
+    .json({ success: true, data: serialize(full) });
 };
-
-const listTransactions = async (req, res, forcedMode, parentType = "category") => {
-    const query = parse(transactionQuery, req.query);
-    const { search, sort, limit, offset, minNominal, maxNominal } = query;
-    // Query structure comes only from fixed application-owned choices.
-    const sortDirection = { asc: "ASC", desc: "DESC" }[sort];
-
-    if (minNominal !== undefined && maxNominal !== undefined && Number(minNominal) > Number(maxNominal)) {
-        return res.status(400).json({
-            message: "minNominal tidak boleh melebihi maxNominal"
-        });
-    }
-
-    let categoryId;
-    let userId;
-
-    if (req.params.id !== undefined) {
-        const id = parse(idSchema, req.params.id);
-        const parent = parentType === 'user' ? await User.findByPk(id) : await Category.findByPk(id);
-
-        if (!parent) {
-            return res.status(404).json({ message: parentType === 'user' ? 'User tidak ditemukan' : 'Category tidak ditemukan' });
-        }
-
-        if (parentType === 'user') userId = id;
-        else categoryId = id;
-    }
-
-    const mode = forcedMode || query.mode;
-    let rows;
-
-    if (mode === "raw") {
-        const clauses = [];
-        const bind = {
-            limit,
-            offset
-        };
-
-        if (search) {
-            clauses.push("t.catatan LIKE $search");
-
-            bind.search = `%${search}%`;
-        }
-
-        if (categoryId !== undefined) {
-            clauses.push("t.id_category = $categoryId");
-
-            bind.categoryId = categoryId;
-        }
-
-        if (userId !== undefined) {
-            clauses.push("t.id_user = $userId");
-            bind.userId = userId;
-        }
-
-        if (minNominal !== undefined) {
-            clauses.push("t.nominal >= $minNominal");
-
-            bind.minNominal = minNominal;
-        }
-
-        if (maxNominal !== undefined) {
-            clauses.push("t.nominal <= $maxNominal");
-
-            bind.maxNominal = maxNominal;
-        }
-
-        // sort sudah dibatasi Joi menjadi asc/desc; nilai lain memakai bind.
-        const sql = `SELECT t.id_transaction, t.id_category, t.id_user, t.nominal,
-      t.catatan, t.createdAt, t.updatedAt,
-      c.id AS category_id, c.name AS category_name, c.icon AS category_icon,
-      u.id AS user_id, u.name AS user_name, u.email AS user_email
-      FROM transactions AS t
-      LEFT JOIN categories AS c ON c.id = t.id_category
-      LEFT JOIN users AS u ON u.id = t.id_user AND u.deletedAt IS NULL
-      ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""}
-      ORDER BY t.nominal ${sortDirection}, t.id_transaction ASC
-      LIMIT $limit OFFSET $offset`;
-        const raw = await sequelize.query(sql, {
-            bind,
-            type: QueryTypes.SELECT
-        });
-
-        rows = raw.map(row => ({
-            ...row,
-            category: row.category_id == null ? null : {
-                id: row.category_id,
-                name: row.category_name,
-                icon: row.category_icon
-            },
-            user: row.user_id == null ? null : {
-                id: row.user_id,
-                name: row.user_name,
-                email: row.user_email
-            },
-        }));
-    } else {
-        const where = {};
-
-        if (search) {
-            where.catatan = {
-                [Op.like]: `%${search}%`
-            };
-        }
-
-        if (categoryId !== undefined) {
-            where.id_category = categoryId;
-        }
-
-        if (userId !== undefined) {
-            where.id_user = userId;
-        }
-
-        if (minNominal !== undefined || maxNominal !== undefined) {
-            where.nominal = {};
-
-            if (minNominal !== undefined) {
-                where.nominal[Op.gte] = minNominal;
-            }
-
-            if (maxNominal !== undefined) {
-                where.nominal[Op.lte] = maxNominal;
-            }
-        }
-
-        rows = await Transaction.findAll({
-            attributes: transactionFields,
-            where,
-            include: includes,
-            order: [["nominal", sortDirection], ["id_transaction", "ASC"]],
-            limit,
-            offset,
-        });
-    }
-
-    res.json({
-        success: true,
-        meta: {
-            search,
-            sort,
-            limit,
-            offset,
-            count: rows.length
-        },
-        data: rows.map(serialize)
-    });
-};
-
-const getTransactions = (req, res) => listTransactions(req, res);
-
-const getTransactionsORM = (req, res) => listTransactions(req, res, "orm");
-
-const getTransactionsRaw = (req, res) => listTransactions(req, res, "raw");
-
-const getTransactionsByCategory = (req, res) => listTransactions(req, res);
-
-const getTransactionsByUser = (req, res) => listTransactions(req, res, undefined, 'user');
-
-const getTransactionById = async (req, res) => {
-    const transaction = await Transaction.findByPk(parse(idSchema, req.params.id), {
-        attributes: transactionFields,
-        include: includes
-    });
-
-    if (!transaction) {
-        return res.status(404).json({ message: 'Transaction tidak ditemukan' });
-    }
-
-    return res.json({ success: true, data: serialize(transaction) });
-};
-
-const replaceTransaction = async (req, res) => {
+const listTransactions = async (req, res, forcedMode, parentType) => {
+  const extra = {};
+  if (parentType) {
     const id = parse(idSchema, req.params.id);
-    const value = parse(transactionPut, req.body);
-    const result = await sequelize.transaction(async transaction => {
-        const row = await Transaction.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
-
-        if (!row) throw httpError(404, 'Transaction tidak ditemukan');
-
-        const user = await User.findByPk(value.id_user, { transaction, lock: transaction.LOCK.UPDATE });
-        const category = await Category.findByPk(value.id_category, { transaction, lock: transaction.LOCK.UPDATE });
-
-        if (!user || !category) throw httpError(404, 'User atau Category tidak ditemukan');
-
-        await row.update(value, { transaction });
-
-        return Transaction.findByPk(id, { attributes: transactionFields, include: includes, transaction });
+    if (parentType === 'user') assertUserPath(req, id);
+    if (!(await (parentType === 'user' ? User : Category).findByPk(id)))
+      throw httpError(404, 'Data tidak ditemukan');
+    extra[parentType === 'user' ? 'id_user' : 'id_category'] = id;
+  }
+  const p = plan(req, extra),
+    { q } = p;
+  let rows, total;
+  if ((forcedMode || q.mode) === 'raw') {
+    const count = await sequelize.query(
+      `SELECT COUNT(*) AS total FROM transactions t ${p.sqlWhere}`,
+      { replacements: p.replacements, type: QueryTypes.SELECT },
+    );
+    total = Number(count[0].total);
+    const sortColumn = {
+      createdAt: 't.createdAt',
+      nominal: 't.nominal',
+      id_transaction: 't.id_transaction',
+    }[q.sort_by];
+    const direction = { asc: 'ASC', desc: 'DESC' }[q.sort];
+    rows = await sequelize.query(
+      `SELECT t.*, c.id AS category_id, c.name AS category_name,c.icon AS category_icon,u.id AS user_id,u.name AS user_name,u.email AS user_email
+            FROM transactions t LEFT JOIN categories c ON c.id=t.id_category LEFT JOIN users u ON u.id=t.id_user AND u.deletedAt IS NULL
+            ${p.sqlWhere} ORDER BY ${sortColumn} ${direction},t.id_transaction ${direction} LIMIT :limit OFFSET :offset`,
+      {
+        replacements: { ...p.replacements, limit: q.limit, offset: q.offset },
+        type: QueryTypes.SELECT,
+      },
+    );
+    rows = rows.map((t) => ({
+      ...t,
+      category:
+        t.category_id == null
+          ? null
+          : { id: t.category_id, name: t.category_name, icon: t.category_icon },
+      user: t.user_id == null ? null : { id: t.user_id, name: t.user_name, email: t.user_email },
+    }));
+  } else {
+    const result = await Transaction.findAndCountAll({
+      where: p.where,
+      include: includes,
+      order: [
+        [q.sort_by, q.sort.toUpperCase()],
+        ['id_transaction', q.sort.toUpperCase()],
+      ],
+      limit: q.limit,
+      offset: q.offset,
     });
-
-    return res.json({ success: true, data: serialize(result) });
+    rows = result.rows;
+    total = result.count;
+  }
+  res.json({
+    success: true,
+    meta: {
+      total,
+      count: rows.length,
+      limit: q.limit,
+      offset: q.offset,
+      page: Math.floor(q.offset / q.limit) + 1,
+      sort: q.sort,
+      sort_by: q.sort_by,
+    },
+    data: rows.map(serialize),
+  });
 };
-
-const updateTransaction = async (req, res) => {
-    const id = parse(idSchema, req.params.id);
-    const value = parse(transactionPatch, req.body);
-    const transaction = await Transaction.findByPk(id);
-
-    if (!transaction) {
-        return res.status(404).json({
-            message: "Transaction tidak ditemukan"
-        });
-    }
-
-    await transaction.update(value);
-
-    res.json({
-        success: true,
-        data: transaction
-    });
+const getTransactionById = async (req, res) =>
+  res.json({ success: true, data: serialize(await owned(req, { include: includes })) });
+const save = async (req, res, partial) => {
+  const value = parse(partial ? schemas.patch : schemas.put, req.body);
+  const result = await sequelize.transaction(async (transaction) => {
+    const row = await owned(req, { transaction, lock: transaction.LOCK.UPDATE });
+    preserveOwner(value, row.id_user);
+    await references(row.id_user, value.id_category || row.id_category, transaction);
+    await row.update(value, { transaction });
+    return Transaction.findByPk(row.id_transaction, { include: includes, transaction });
+  });
+  res.json({ success: true, data: serialize(result) });
 };
-
 const deleteTransaction = async (req, res) => {
-    const transaction = await Transaction.findByPk(parse(idSchema, req.params.id));
-
-    if (!transaction) {
-        return res.status(404).json({
-            message: "Transaction tidak ditemukan"
-        });
-    }
-
-    await transaction.destroy();
-
-    res.json({
-        success: true,
-        message: "Transaction berhasil dihapus"
-    });
+  const row = await owned(req);
+  await row.destroy();
+  res.status(204).send();
 };
-
+const getCashFlow = async (req, res) => {
+  const p = plan(req);
+  const [row] = await sequelize.query(
+    `SELECT COALESCE(SUM(CASE WHEN t.type='income' THEN t.nominal ELSE 0 END),0) AS income,
+        COALESCE(SUM(CASE WHEN t.type='expense' THEN t.nominal ELSE 0 END),0) AS expense,COUNT(*) AS total_transactions
+        FROM transactions t ${p.sqlWhere}`,
+    { replacements: p.replacements, type: QueryTypes.SELECT },
+  );
+  const income = toCents(row.income),
+    expense = toCents(row.expense);
+  res.json({
+    success: true,
+    data: {
+      label: 'Arus kas tercatat',
+      income: fromCents(income),
+      expense: fromCents(expense),
+      difference: fromCents(income - expense),
+      total_transactions: Number(row.total_transactions),
+      timezone: 'Asia/Jakarta',
+      filters: {
+        period: p.q.period || null,
+        start_date: p.q.start_date || null,
+        end_date: p.q.end_date || null,
+        type: p.q.type || null,
+        category_id: p.q.category_id || null,
+        search: p.q.search,
+      },
+    },
+  });
+};
 module.exports = {
-    getTransactionById,
-    replaceTransaction,
-    getTransactionsByUser,
-    createTransaction,
-    getTransactions,
-    getTransactionsORM,
-    getTransactionsRaw,
-    getTransactionsByCategory,
-    updateTransaction,
-    deleteTransaction
+  createTransaction,
+  getTransactionById,
+  deleteTransaction,
+  getCashFlow,
+  getTransactions: (req, res) => listTransactions(req, res),
+  getTransactionsORM: (req, res) => listTransactions(req, res, 'orm'),
+  getTransactionsRaw: (req, res) => listTransactions(req, res, 'raw'),
+  getTransactionsByUser: (req, res) => listTransactions(req, res, null, 'user'),
+  getTransactionsByCategory: (req, res) => listTransactions(req, res, null, 'category'),
+  replaceTransaction: (req, res) => save(req, res, false),
+  updateTransaction: (req, res) => save(req, res, true),
 };

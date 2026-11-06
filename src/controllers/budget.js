@@ -1,229 +1,261 @@
+const { ownerWhere, createOwner, preserveOwner, assertUserPath } = require('../utils/access');
 const { Op } = require('sequelize');
 const { Budget, BudgetCategory, User, Category, sequelize } = require('../models');
-const { budgetBody, budgetId, budgetListQuery, budgetPatch } = require('../utils/validation/budgetSchemas');
+const {
+  budgetBody,
+  budgetId,
+  budgetListQuery,
+  budgetPatch,
+} = require('../utils/validation/budgetSchemas');
 const { parse } = require('../utils/validation/resourceSchemas');
 const httpError = require('../utils/httpError');
 
 const budgetInclude = [
-    {
-        model: Category,
-        as: 'categories',
-        attributes: ['id', 'name', 'icon'],
-        through: {
-            attributes: ['allocated_amount']
-        },
-        required: false
-    }
+  {
+    model: Category,
+    as: 'categories',
+    attributes: ['id', 'name', 'icon'],
+    through: {
+      attributes: ['allocated_amount'],
+    },
+    required: false,
+  },
 ];
 
-const joinedBudget = (id, transaction) => Budget.findByPk(id, {
+const joinedBudget = (id, transaction) =>
+  Budget.findByPk(id, {
     include: budgetInclude,
-    transaction
-});
+    transaction,
+  });
 
 const checkReferences = async (value, transaction) => {
-    const user = await User.findByPk(value.user_id, {
-        transaction,
-        lock: transaction.LOCK.UPDATE
-    });
+  const user = await User.findByPk(value.user_id, {
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
 
-    if (!user) {
-        throw httpError(404, 'User aktif tidak ditemukan');
-    }
+  if (!user) {
+    throw httpError(404, 'User aktif tidak ditemukan');
+  }
 
-    const ids = value.budget_categories.map(item => item.category_id);
-    const categories = await Category.findAll({
-        attributes: ['id'],
-        where: {
-            id: {
-                [Op.in]: ids
-            }
-        },
-        order: [['id', 'ASC']],
-        transaction,
-        lock: transaction.LOCK.UPDATE
-    });
+  const ids = value.budget_categories.map((item) => item.category_id);
+  const categories = await Category.findAll({
+    attributes: ['id'],
+    where: {
+      id: {
+        [Op.in]: ids,
+      },
+    },
+    order: [['id', 'ASC']],
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
 
-    if (categories.length !== ids.length) {
-        throw httpError(404, 'Satu atau lebih kategori tidak ditemukan');
-    }
+  if (categories.length !== ids.length) {
+    throw httpError(404, 'Satu atau lebih kategori tidak ditemukan');
+  }
 };
 
 const checkPeriod = async (value, transaction, excludedId) => {
-    const where = {
-        user_id: value.user_id,
-        month: value.month,
-        year: value.year
+  const where = {
+    user_id: value.user_id,
+    month: value.month,
+    year: value.year,
+  };
+
+  if (excludedId !== undefined) {
+    where.budget_id = {
+      [Op.ne]: excludedId,
     };
+  }
 
-    if (excludedId !== undefined) {
-        where.budget_id = {
-            [Op.ne]: excludedId
-        };
-    }
+  const duplicate = await Budget.findOne({ where, transaction });
 
-    const duplicate = await Budget.findOne({ where, transaction });
+  if (duplicate) {
+    throw httpError(409, 'Budget untuk user dan periode tersebut sudah ada');
+  }
 
-    if (duplicate) {
-        throw httpError(409, 'Budget untuk user dan periode tersebut sudah ada');
-    }
-
-    // UNIQUE SQL tetap menjadi perlindungan akhir jika ada request bersamaan.
+  // UNIQUE SQL tetap menjadi perlindungan akhir jika ada request bersamaan.
 };
 
 const createAllocations = async (id, categories, transaction) => {
-    const values = categories.map(item => ({
-        budget_id: id,
-        category_id: item.category_id,
-        allocated_amount: item.allocated_amount
-    }));
+  const values = categories.map((item) => ({
+    budget_id: id,
+    category_id: item.category_id,
+    allocated_amount: item.allocated_amount,
+  }));
 
-    await BudgetCategory.bulkCreate(values, {
-        transaction,
-        validate: true
-    });
+  await BudgetCategory.bulkCreate(values, {
+    transaction,
+    validate: true,
+  });
 };
 
 const createBudget = async (req, res) => {
-    const value = parse(budgetBody, req.body);
-    const created = await sequelize.transaction(async transaction => {
-        await checkReferences(value, transaction);
-        await checkPeriod(value, transaction);
+  const value = parse(budgetBody, req.body);
+  value.user_id = createOwner(req, value, 'user_id');
+  const created = await sequelize.transaction(async (transaction) => {
+    await checkReferences(value, transaction);
+    await checkPeriod(value, transaction);
 
-        const budget = await Budget.create({
-            user_id: value.user_id,
-            month: value.month,
-            year: value.year
-        }, { transaction });
+    const budget = await Budget.create(
+      {
+        user_id: value.user_id,
+        month: value.month,
+        year: value.year,
+      },
+      { transaction },
+    );
 
-        await createAllocations(budget.budget_id, value.budget_categories, transaction);
+    await createAllocations(budget.budget_id, value.budget_categories, transaction);
 
-        return joinedBudget(budget.budget_id, transaction);
-    });
+    return joinedBudget(budget.budget_id, transaction);
+  });
 
-    return res.location(`/api/v1/budgets/${created.budget_id}`)
-        .status(201)
-        .json({ status: 'success', data: created });
+  return res
+    .location(`/api/v1/budgets/${created.budget_id}`)
+    .status(201)
+    .json({ status: 'success', data: created });
 };
 
 const getAllBudgets = async (req, res) => {
-    const value = parse(budgetListQuery, req.query);
-    const where = {};
+  const value = parse(budgetListQuery, req.query);
+  const where = ownerWhere(req, 'user_id');
 
-    if (value.user_id !== undefined) {
-        where.user_id = value.user_id;
-    }
+  if (value.user_id !== undefined) {
+    assertUserPath(req, value.user_id);
+    where.user_id = value.user_id;
+  }
 
-    // Satu SELECT dengan JOIN. Tidak ada query kategori di dalam loop.
-    const budgets = await Budget.findAll({
-        where,
-        include: budgetInclude,
-        order: [['budget_id', 'ASC']]
-    });
+  // Satu SELECT dengan JOIN. Tidak ada query kategori di dalam loop.
+  const budgets = await Budget.findAll({
+    where,
+    include: budgetInclude,
+    order: [['budget_id', 'ASC']],
+  });
 
-    return res.json({ status: 'success', data: budgets });
+  return res.json({ status: 'success', data: budgets });
 };
 
 const getBudgetById = async (req, res) => {
-    const id = parse(budgetId, req.params.id);
-    const budget = await joinedBudget(id);
+  const id = parse(budgetId, req.params.id);
+  const budget = await Budget.findOne({
+    where: { budget_id: id, ...ownerWhere(req, 'user_id') },
+    include: budgetInclude,
+  });
 
-    if (!budget) {
-        throw httpError(404, 'Budget tidak ditemukan');
-    }
+  if (!budget) {
+    throw httpError(404, 'Budget tidak ditemukan');
+  }
 
-    return res.json({ status: 'success', data: budget });
+  return res.json({ status: 'success', data: budget });
 };
 
 const saveBudget = async (req, res, partial) => {
-    const id = parse(budgetId, req.params.id);
-    const input = parse(partial ? budgetPatch : budgetBody, req.body);
-    const updated = await sequelize.transaction(async transaction => {
-        const budget = await Budget.findByPk(id, {
-            transaction,
-            lock: transaction.LOCK.UPDATE
-        });
-
-        if (!budget) {
-            throw httpError(404, 'Budget tidak ditemukan');
-        }
-
-        const value = partial ? {
-            user_id: budget.user_id,
-            month: budget.month,
-            year: budget.year,
-            ...input
-        } : input;
-
-        await checkReferences({ ...value, budget_categories: value.budget_categories || [] }, transaction);
-        await checkPeriod(value, transaction, id);
-
-        await budget.update({
-            user_id: value.user_id,
-            month: value.month,
-            year: value.year
-        }, { transaction });
-
-        // PATCH mempertahankan alokasi jika field tidak dikirim; jika dikirim, ganti seluruh daftar.
-        if (value.budget_categories !== undefined) {
-            await BudgetCategory.destroy({ where: { budget_id: id }, transaction });
-            await createAllocations(id, value.budget_categories, transaction);
-        }
-
-        return joinedBudget(id, transaction);
+  const id = parse(budgetId, req.params.id);
+  const input = parse(partial ? budgetPatch : budgetBody, req.body);
+  const updated = await sequelize.transaction(async (transaction) => {
+    const budget = await Budget.findOne({
+      where: { budget_id: id, ...ownerWhere(req, 'user_id') },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
     });
 
-    return res.json({ status: 'success', data: updated });
+    if (!budget) {
+      throw httpError(404, 'Budget tidak ditemukan');
+    }
+
+    preserveOwner(input, budget.user_id, 'user_id');
+    const value = partial
+      ? {
+          user_id: budget.user_id,
+          month: budget.month,
+          year: budget.year,
+          ...input,
+        }
+      : { ...input, user_id: budget.user_id };
+
+    await checkReferences(
+      { ...value, budget_categories: value.budget_categories || [] },
+      transaction,
+    );
+    await checkPeriod(value, transaction, id);
+
+    await budget.update(
+      {
+        user_id: value.user_id,
+        month: value.month,
+        year: value.year,
+      },
+      { transaction },
+    );
+
+    // PATCH mempertahankan alokasi jika field tidak dikirim; jika dikirim, ganti seluruh daftar.
+    if (value.budget_categories !== undefined) {
+      await BudgetCategory.destroy({ where: { budget_id: id }, transaction });
+      await createAllocations(id, value.budget_categories, transaction);
+    }
+
+    return joinedBudget(id, transaction);
+  });
+
+  return res.json({ status: 'success', data: updated });
 };
 
 const updateBudget = (req, res) => saveBudget(req, res, false);
 const patchBudget = (req, res) => saveBudget(req, res, true);
 
 const getBudgetsByUser = async (req, res) => {
-    const id = parse(budgetId, req.params.id);
-    parse(budgetListQuery, req.query);
+  const id = parse(budgetId, req.params.id);
+  assertUserPath(req, id);
+  parse(budgetListQuery, req.query);
 
-    if (req.query.user_id !== undefined && Number(req.query.user_id) !== id) {
-        throw httpError(400, 'user_id pada query harus sama dengan ID pada URL');
-    }
+  if (req.query.user_id !== undefined && Number(req.query.user_id) !== id) {
+    throw httpError(400, 'user_id pada query harus sama dengan ID pada URL');
+  }
 
-    if (!await User.findByPk(id)) throw httpError(404, 'User aktif tidak ditemukan');
+  if (!(await User.findByPk(id))) throw httpError(404, 'User aktif tidak ditemukan');
 
-    const budgets = await Budget.findAll({ where: { user_id: id }, include: budgetInclude, order: [['budget_id', 'ASC']] });
+  const budgets = await Budget.findAll({
+    where: { user_id: id },
+    include: budgetInclude,
+    order: [['budget_id', 'ASC']],
+  });
 
-    return res.json({ status: 'success', data: budgets });
+  return res.json({ status: 'success', data: budgets });
 };
 
 const deleteBudget = async (req, res) => {
-    const id = parse(budgetId, req.params.id);
+  const id = parse(budgetId, req.params.id);
 
-    await sequelize.transaction(async transaction => {
-        const budget = await Budget.findByPk(id, {
-            transaction,
-            lock: transaction.LOCK.UPDATE
-        });
-
-        if (!budget) {
-            throw httpError(404, 'Budget tidak ditemukan');
-        }
-
-        await BudgetCategory.destroy({
-            where: { budget_id: id },
-            transaction
-        });
-
-        await budget.destroy({ transaction });
+  await sequelize.transaction(async (transaction) => {
+    const budget = await Budget.findOne({
+      where: { budget_id: id, ...ownerWhere(req, 'user_id') },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
     });
 
-    return res.status(204).send();
+    if (!budget) {
+      throw httpError(404, 'Budget tidak ditemukan');
+    }
+
+    await BudgetCategory.destroy({
+      where: { budget_id: id },
+      transaction,
+    });
+
+    await budget.destroy({ transaction });
+  });
+
+  return res.status(204).send();
 };
 
 module.exports = {
-    patchBudget,
-    getBudgetsByUser,
-    createBudget,
-    getAllBudgets,
-    getBudgetById,
-    updateBudget,
-    deleteBudget
+  patchBudget,
+  getBudgetsByUser,
+  createBudget,
+  getAllBudgets,
+  getBudgetById,
+  updateBudget,
+  deleteBudget,
 };

@@ -10,8 +10,7 @@
     --danger: #b42318;
     --danger-soft: #fff1ee;
     --radius: 16px;
-    --font:
-        system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 * {
     box-sizing: border-box;
@@ -434,7 +433,7 @@ button:disabled {
     height: 280px;
     border: 35px solid rgb(255 255 255 / 5%);
     border-radius: 50%;
-    content: "";
+    content: '';
     pointer-events: none;
 }
 .hero-card-top {
@@ -842,7 +841,7 @@ select:disabled {
     color: var(--danger);
     font-size: 12px;
 }
-[aria-invalid="true"] {
+[aria-invalid='true'] {
     border-color: var(--danger);
 }
 .form-actions {
@@ -1462,5 +1461,244 @@ select:disabled {
     .filter-grid input,
     .filter-grid select {
         font-size: 16px;
+    }
+}
+
+/* Cash flow milestone: shared authentic account screens and transaction views. */
+.auth-page {
+    min-height: 100dvh;
+    background: var(--background);
+    display: grid;
+    place-items: center;
+    padding: 32px;
+}
+.auth-shell {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 1080px;
+    width: 100%;
+    min-height: 680px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px #1529230b;
+}
+.auth-intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 48px;
+    background: #eaf5f1;
+    color: var(--ink);
+    gap: 48px;
+}
+.auth-intro h1 {
+    font-size: 38px;
+    line-height: 1.2;
+    letter-spacing: -1.3px;
+    margin: 16px 0 24px;
+}
+.auth-intro > div > p {
+    max-width: 360px;
+    color: var(--muted);
+    line-height: 1.75;
+}
+.auth-intro .brand {
+    color: var(--ink);
+}
+.auth-intro .brand small {
+    color: var(--muted);
+}
+.auth-points {
+    display: grid;
+    gap: 16px;
+    margin-top: 32px;
+    font-size: 14px;
+}
+.auth-points span {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.auth-points svg {
+    width: 18px;
+    height: 18px;
+    color: var(--primary);
+}
+.auth-form-panel {
+    padding: 48px;
+    display: grid;
+    align-items: center;
+}
+.auth-form-inner {
+    width: 100%;
+    max-width: 380px;
+    margin: auto;
+}
+.auth-form-panel h2 {
+    font-size: 27px;
+    line-height: 1.25;
+    margin: 12px 0;
+}
+.auth-form-panel .subtitle {
+    margin-bottom: 28px;
+}
+.auth-form {
+    display: grid;
+    gap: 20px;
+}
+.auth-switch {
+    font-size: 14px;
+    margin-top: 24px;
+    text-align: center;
+}
+.auth-switch a {
+    font-weight: 600;
+    color: var(--primary);
+}
+.cash-flow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 12px;
+}
+.metric {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-wrap: anywhere;
+}
+.income-value {
+    color: #087653;
+}
+.expense-value {
+    color: #b42318;
+}
+.cash-flow-caption {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 28px;
+}
+.transaction-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    align-items: end;
+    margin-bottom: 24px;
+}
+.filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 44px;
+}
+.period-picker {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 24px;
+}
+.period-picker .field {
+    min-width: 210px;
+}
+.transaction-type {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 650;
+    white-space: nowrap;
+}
+.income-tag {
+    background: #eaf5f1;
+    color: #087653;
+}
+.expense-tag {
+    background: #fff1ee;
+    color: #a62a20;
+}
+.expense-card-main .transaction-type {
+    margin: 4px 0 8px;
+}
+.compact-button {
+    min-height: 38px;
+    padding: 7px 14px;
+    font-size: 13px;
+}
+.account-name {
+    font-size: 13px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: 900px) {
+    .auth-page {
+        padding: 20px;
+    }
+    .auth-intro {
+        padding: 32px;
+    }
+    .auth-intro h1 {
+        font-size: 31px;
+    }
+    .auth-form-panel {
+        padding: 32px;
+    }
+    .transaction-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 639px) {
+    .auth-page {
+        display: block;
+        padding: 16px;
+    }
+    .auth-shell {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        border-radius: 18px;
+    }
+    .auth-intro {
+        padding: 24px;
+        gap: 20px;
+    }
+    .auth-intro h1 {
+        font-size: 28px;
+        margin: 12px 0;
+    }
+    .auth-intro > div > p {
+        margin: 0;
+    }
+    .auth-intro > .small,
+    .auth-points {
+        display: none;
+    }
+    .auth-form-panel {
+        padding: 28px 24px;
+    }
+    .cash-flow-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .cash-flow-grid .metric {
+        gap: 8px;
+    }
+    .transaction-filters {
+        grid-template-columns: 1fr;
+    }
+    .period-picker {
+        align-items: end;
+    }
+    .period-picker .field {
+        min-width: 0;
+        flex: 1;
+    }
+    .account-name {
+        max-width: 95px;
+    }
+    .topbar-actions {
+        gap: 8px;
     }
 }

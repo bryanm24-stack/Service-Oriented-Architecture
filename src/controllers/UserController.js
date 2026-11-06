@@ -1,75 +1,86 @@
+const { assertUserPath } = require('../utils/access');
 const { hashPassword } = require('../utils/password');
-const { Op, QueryTypes } = require("sequelize");
-const { User, sequelize } = require("../models");
+const { Op, QueryTypes } = require('sequelize');
+const { User, sequelize } = require('../models');
 const { getUserPaymentStatus } = require('../services/midtrans');
 const httpError = require('../utils/httpError');
-const { parse, idSchema, userCreate, userPatch, userQuery } = require("../utils/validation/resourceSchemas");
+const {
+  parse,
+  idSchema,
+  userCreate,
+  userPatch,
+  userQuery,
+} = require('../utils/validation/resourceSchemas');
 
-const publicUser = user => {
-    const data = user.toJSON();
+const publicUser = (user) => {
+  const data = user.toJSON();
 
-    delete data.password;
+  delete data.password;
 
-    return data;
+  return data;
 };
 
 const getAllUsers = async (req, res) => {
-    const { search, sort, limit, offset } = parse(userQuery, req.query);
-    const where = search ? {
+  const { search, sort, limit, offset } = parse(userQuery, req.query);
+  const where = search
+    ? {
         name: {
-            [Op.like]: `%${search}%`
-        }
-    } : {};
-    const users = await User.findAll({
-        where,
-        order: [[sort, "ASC"]],
-        limit,
-        offset
-    });
+          [Op.like]: `%${search}%`,
+        },
+      }
+    : {};
+  const users = await User.findAll({
+    where,
+    order: [[sort, 'ASC']],
+    limit,
+    offset,
+  });
 
-    res.json(users.map(publicUser));
+  res.json(users.map(publicUser));
 };
 
 const getUserById = async (req, res) => {
-    const user = await User.findByPk(parse(idSchema, req.params.id));
+  assertUserPath(req, parse(idSchema, req.params.id));
+  const user = await User.findByPk(parse(idSchema, req.params.id));
 
-    if (!user) {
-        return res.status(404).json({
-            message: "User tidak ditemukan"
-        });
-    }
+  if (!user) {
+    return res.status(404).json({
+      message: 'User tidak ditemukan',
+    });
+  }
 
-    res.json(publicUser(user));
+  res.json(publicUser(user));
 };
 
 const createUser = async (req, res) => {
-    const value = parse(userCreate, req.body);
+  const value = parse(userCreate, req.body);
 
-    value.password = await hashPassword(value.password);
+  value.password = await hashPassword(value.password);
 
-    const user = await User.create(value);
+  const user = await User.create(value);
 
-    res.location(`/api/v1/users/${user.id}`).status(201).json(publicUser(user));
+  res.location(`/api/v1/users/${user.id}`).status(201).json(publicUser(user));
 };
 
 const update = async (req, res, schema) => {
-    const id = parse(idSchema, req.params.id);
-    const value = parse(schema, req.body);
-    const user = await User.findByPk(id);
+  assertUserPath(req, parse(idSchema, req.params.id));
+  const id = parse(idSchema, req.params.id);
+  const value = parse(schema, req.body);
+  const user = await User.findByPk(id);
 
-    if (!user) {
-        return res.status(404).json({
-            message: "User tidak ditemukan"
-        });
-    }
+  if (!user) {
+    return res.status(404).json({
+      message: 'User tidak ditemukan',
+    });
+  }
 
-    if (value.password !== undefined) {
-        value.password = await hashPassword(value.password);
-    }
+  if (value.password !== undefined) {
+    value.password = await hashPassword(value.password);
+  }
 
-    await user.update(value);
+  await user.update(value);
 
-    res.json(publicUser(user));
+  res.json(publicUser(user));
 };
 
 const updateUser = (req, res) => update(req, res, userCreate);
@@ -77,70 +88,73 @@ const updateUser = (req, res) => update(req, res, userCreate);
 const patchUser = (req, res) => update(req, res, userPatch);
 
 const deleteUser = async (req, res) => {
-    const user = await User.findByPk(parse(idSchema, req.params.id));
+  assertUserPath(req, parse(idSchema, req.params.id));
+  const user = await User.findByPk(parse(idSchema, req.params.id));
 
-    if (!user) {
-        return res.status(404).json({
-            message: "User tidak ditemukan"
-        });
-    }
-
-    await user.destroy(); // Soft delete; transaksi historis tetap disimpan.
-    res.json({
-        message: "User berhasil dihapus"
+  if (!user) {
+    return res.status(404).json({
+      message: 'User tidak ditemukan',
     });
+  }
+
+  await user.destroy(); // Soft delete; transaksi historis tetap disimpan.
+  res.json({
+    message: 'User berhasil dihapus',
+  });
 };
 
 const getUserByIdRaw = async (req, res) => {
-    const id = parse(idSchema, req.params.id);
-    const [user] = await sequelize.query(
-        "SELECT id, name, email, createdAt, updatedAt FROM users WHERE id = $id AND deletedAt IS NULL",
-        {
-            bind: {
-                id
-            },
-            type: QueryTypes.SELECT
-        }
-    );
+  assertUserPath(req, parse(idSchema, req.params.id));
+  const id = parse(idSchema, req.params.id);
+  const [user] = await sequelize.query(
+    'SELECT id, name, email, createdAt, updatedAt FROM users WHERE id = $id AND deletedAt IS NULL',
+    {
+      bind: {
+        id,
+      },
+      type: QueryTypes.SELECT,
+    },
+  );
 
-    if (!user) {
-        return res.status(404).json({
-            message: "User tidak ditemukan"
-        });
-    }
+  if (!user) {
+    return res.status(404).json({
+      message: 'User tidak ditemukan',
+    });
+  }
 
-    res.json(user);
+  res.json(user);
 };
 
 const getUserSubscription = async (req, res) => {
-    const id = parse(idSchema, req.params.id);
-    const user = await User.findByPk(id);
+  assertUserPath(req, parse(idSchema, req.params.id));
+  const id = parse(idSchema, req.params.id);
+  const user = await User.findByPk(id);
 
-    if (!user) {
-        throw httpError(404, 'User tidak ditemukan');
-    }
+  if (!user) {
+    throw httpError(404, 'User tidak ditemukan');
+  }
 
-    const payment = await getUserPaymentStatus(user.id);
+  const payment = await getUserPaymentStatus(user.id);
 
-    return res.json({
-        data: {
-            profil_pengguna: {
-                id_pengguna: user.id,
-                nama: user.name,
-                email: user.email
-            },
-            info_langganan: payment
-        }
-    });
+  return res.json({
+    data: {
+      profil_pengguna: {
+        id_pengguna: user.id,
+        nama: user.name,
+        email: user.email,
+      },
+      info_langganan: payment,
+    },
+  });
 };
 
 module.exports = {
-    getAllUsers,
-    getUserById,
-    createUser,
-    updateUser,
-    patchUser,
-    deleteUser,
-    getUserByIdRaw,
-    getUserSubscription
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  patchUser,
+  deleteUser,
+  getUserByIdRaw,
+  getUserSubscription,
 };

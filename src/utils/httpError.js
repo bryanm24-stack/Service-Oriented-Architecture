@@ -1,11 +1,11 @@
 const httpError = (status, message) => {
-    const error = new Error(message);
+  const error = new Error(message);
 
-    error.status = status;
+  error.status = status;
 
-    error.expose = true;
+  error.expose = true;
 
-    return error;
+  return error;
 };
 
 module.exports = httpError;

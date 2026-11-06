@@ -1,15 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const authController = require('../controllers/auth.controller');
-const { verifyJWT } = require('../middlewares/auth.middleware');
-
-// Public Routes
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.get('/refresh', authController.refresh);
-router.post('/logout', authController.logout);
-
-// Protected Route
-router.get('/profile', verifyJWT, authController.getProfile);
-
+const router = require('express').Router();
+const controller = require('../controllers/auth');
+const wrap = require('../utils/asyncHandler');
+const { verifyJWT } = require('../middlewares/auth');
+router.post('/register', wrap(controller.register));
+router.post('/login', wrap(controller.login));
+router.post('/refresh', wrap(controller.refresh));
+router.get('/refresh', wrap(controller.refresh));
+router.post('/logout', verifyJWT, wrap(controller.logout));
+router.get('/me', verifyJWT, wrap(controller.getProfile));
+router.get('/profile', verifyJWT, wrap(controller.getProfile));
 module.exports = router;

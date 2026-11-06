@@ -1,87 +1,122 @@
-# ProjectSOA — milestone 1: baseline dan kontrak tim
+# ProjectSOA — Arus Kas, Login/Register dan Ownership
 
-Dokumen kerja bersama Kenneth, Bryan, Dana, Rafael. **M1 menyediakan baseline Git, rancangan data/API, pembagian PIC dan wireframe UI. Belum menambah implementasi pembayaran atau AI.**
-Status kontrak: draft v0.1 siap ditinjau; persetujuan anggota belum dicatat.
+Express + Sequelize + MySQL sebagai API; Laravel 13 + Blade sebagai web/PWA. Tidak ada database user Laravel kedua. Register pada web memanggil POST /api/v1/auth/register; akun masuk ke tabel users pada database Node yang ditentukan DB_NAME dan dapat dilihat melalui SQLyog.
 
-## Hasil merge 3 November 2026
+## Mulai di Windows/Laragon
 
-Branch hasil: `fix/merge-octavius-branch-baru`, menggabungkan:
-- `branch-baru` pada `348821b2f4be81b798c5fdd188729c8487224f63`.
-- `Octavius` pada `24f57720c438322ce5b2e77c063333051e247288`.
+Prasyarat: Node.js 24, PHP >=8.3, Composer dan MySQL/MariaDB aktif. Ekstensi PHP: curl, mbstring, fileinfo, openssl, xml/dom dan zip. Laravel menjadi HTTP gateway, sehingga tidak membutuhkan koneksi SQL terpisah. Jalankan di terminal yang sudah mengenali node, npm, php dan composer.
 
-Tujuh konflik Budget/model/validasi diselesaikan. Budget CRUD, PATCH, summary dan N:M memakai versi keuangan; model ApiClient, ApiTier dan ApiLog dari Octavius didaftarkan pada koneksi Sequelize yang sama.
-FK `ApiClient.user_id` mengikuti INT signed pada User. Indeks ApiLog diperbaiki agar memakai kolom yang tersedia; timestamp log hanya `created_at`.
-SQL menambahkan tiga tabel API tanpa reset. Runner juga menambah kolom `users.role` jika DB lama belum memilikinya, sesuai model User pada branch-baru.
+1. Ekstrak ZIP ke folder baru. Cadangkan database lama sebelum upgrade. Jangan menimpa .env milik tim dengan contoh kosong.
+2. Buka terminal pada root Service-Oriented-Architecture:
 
-Paket hasil berisi snapshot `Service-Oriented-Architecture/`, `merge-resolution.bundle`, `merge-resolution.patch`, dan panduan `MULAI_MERGE.md` di folder paket. Bundle bersifat incremental dan dipakai lewat `git fetch` pada repository tim yang sudah memiliki kedua commit sumber, bukan lewat `git clone` ke repo kosong.
-Tidak ada push ke remote; riwayat kedua branch dipertahankan dalam merge commit.
-
-## Urutan baca
-
-1. [RANCANGAN.md](RANCANGAN.md): fitur, ERD, relasi, invariant, migrasi dan status persetujuan.
-2. [Kontrak API](docs/KONTRAK_API.md): ownership JWT, decimal/token, respons dan endpoint rencana.
-3. [Kontrak UI](docs/KONTRAK_UI.md) lalu [wireframe](frontend/wireframes.html): satu peta halaman dan satu gaya.
-4. [30 endpoint existing](docs/ENDPOINTS_EXISTING.md) dan [baseline](docs/BASELINE.md): kode yang benar-benar tersedia.
-
-## Kondisi aktual yang harus diketahui tim
-
-- Users 9 + Categories 6 + Transactions 8 + Budgets 7 = 30 endpoint /api/v1. GET / tidak masuk hitungan.
-- Budget–Category tetap N:M melalui BudgetCategory; allocated_amount ada di pivot budget_categories.
-- File draft autentikasi ada di sumber branch-baru, tetapi belum dipasang pada aplikasi index.js. Endpoint keuangan belum memakai JWT/ownership. server.js masih draft lama dengan dependency/path yang belum siap; jalankan npm start melalui index.js. Penyelesaian auth berada di luar resolusi merge ini.
-- Adapter Midtrans existing hanya membaca status order, belum checkout/webhook/wallet. Tidak dikembangkan pada M1.
-- Seluruh halaman pada wireframe memakai data ilustrasi dan bukan aplikasi frontend yang sudah berfungsi.
-- Tiga model API key sudah terdaftar dan SQL tersedia; endpoint penerbitan/revokasi key, middleware rate limit dan pencatatan request belum diimplementasikan. Tidak ada harga/tier baru yang diasumsikan.
-
-## Pekerjaan berikut dan PIC
-
-| Urut | Pekerjaan | PIC | Reviewer / dependensi | Bukti selesai berikutnya |
-|---|---|---|---|---|
-| 1 | Tinjau kontrak, catat keputusan field/relasi dan UI | Semua; Kenneth mengonsolidasikan | Semua anggota | Empat status review terisi di RANCANGAN |
-| 2 | Runner migrasi additive, backup/restore uji dan pertahankan N:M | Kenneth | Rafael; baseline tetap | Upgrade DB berisi data lama tanpa reset |
-| 3 | Auth JWT, role/ownership dan login/register bersama | Bryan | Dana; migrasi role | Tes 401/403/404 lintas user dan UI sesi |
-| 4 | AppShell, Sidebar, form/tabel dan API DTO bersama | Kenneth | Bryan + Dana + Rafael | Satu shell, responsif, tanpa CSS duplikat |
-| 5 | Income dan kontrak tanggal laporan | Dana | Kenneth + Rafael; auth | CRUD pemasukan milik user |
-| 6 | Paket token, Purchase dan integrasi Midtrans sandbox | Bryan | Kenneth; auth + wallet schema | Callback verified/idempotent, tanpa saldo ganda |
-| 7 | TokenWallet, ledger, reservasi dan rekonsiliasi | Kenneth | Dana + Bryan | Kredit/debit atomik, ledger dapat direkonsiliasi |
-| 8 | AI usage aktual, debit melalui wallet, tips gratis | Dana | Kenneth; auth + wallet | Usage input/output dan debit sekali |
-| 9 | Wish cash/cicilan dan realisasi tanpa duplikasi expense | Rafael | Dana; auth + tanggal uang | Jadwal dan realisasi teruji |
-| 10 | Recurring dapat diedit/jeda, occurrence unik | Dana | Rafael; auth + tanggal uang | Tidak menggandakan transaksi |
-| 11 | Dashboard ringkasan dan PDF pengeluaran | Rafael | Dana; income + expenses | Angka UI/PDF sama pada filter yang sama |
-| 12 | Evaluasi bank resmi; tetap off jika syarat belum tersedia | Rafael | Bryan; akses sandbox/izin | Keputusan go/no-go tertulis, tanpa scraping |
-| 13 | Postman/regression 30 endpoint dan seluruh fitur baru | Rafael | PIC fitur | Koleksi existing tetap, koleksi baru dipisah |
-
-Pembagian halaman dan endpoint rinci ada di Kontrak UI. PIC model/relasi tidak diubah sepihak; perubahan lintas modul harus menyertakan dokumen, migrasi/DTO/Postman serta reviewer terkait.
-Paket token bukan saldo uang bank. Fitur wish/cicilan adalah perencanaan pribadi, bukan pemberian kredit.
-
-## Aturan branch dan commit
-
-Mulai tiap feature dari commit kontrak yang sudah ditinjau, bukan dari ZIP versi anggota lain.
-Nama branch: `feat/<pic>-<fitur>`, contoh `feat/bryan-auth`. Satu PIC utama per fitur, satu reviewer lintas modul.
-Gunakan commit kecil: `docs:`, `feat:`, `fix:`, `test:`. Jangan merge perubahan nama FK/response/UI shell tanpa memperbarui kontrak.
-Sebelum commit: `git diff --cached` dan `git ls-files .env` harus diperiksa; perintah kedua tidak menghasilkan file.
-Jangan commit key, token sesi, .env, order asli atau data pribadi. .env.example hanya placeholder; Postman export harus tanpa credential.
-
-## Menjalankan backend existing
-
-Node.js 24 dan MySQL diperlukan untuk jalur database nyata.
-
-```bash
+```powershell
 npm ci
-cp .env.example .env
+Copy-Item .env.example .env
 ```
 
-Isi konfigurasi DB lokal pada .env, lalu jalankan `npm start`. Untuk instalasi awal gunakan `npm run db:migrate` sesuai DB_NAME setelah backup bila DB sudah berisi data.
-Runner tidak menghapus data: delapan tabel dibuat dengan CREATE IF NOT EXISTS dan kolom role ditambahkan secara guarded jika belum ada. Struktur tabel API yang sudah pernah dibuat dengan tipe berbeda perlu diaudit terpisah; runner tidak mengubah tipe atau isi tabel existing secara diam-diam. Jangan menjalankan seed/reset lain sebagai jalan pintas.
-`npm test` memakai database/provider simulasi. Hasil terkini dan batas verifikasi: [VERIFIKASI_M1.md](docs/VERIFIKASI_M1.md).
+Gunakan Copy-Item hanya jika .env belum ada. Isi .env Node:
 
-## Checklist M1
+```dotenv
+PORT=3001
+HOST=127.0.0.1
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=asisten_keuangan
+DB_USER=root
+DB_PASSWORD=
+```
 
-- [x] Baseline commit/tag serta branch kontrak lokal tersedia.
-- [x] 30 endpoint existing dan lapisan kode dipetakan.
-- [x] Rancangan fitur, N:M, calon relasi dan ownership ditulis.
-- [x] Kontrak decimal/token/migrasi tanpa reset dicatat.
-- [x] Wireframe login/register/dashboard/tabel-form, style tokens, struktur frontend dan PIC tersedia.
-- [x] Tidak ada implementasi pembayaran atau AI baru.
-- [ ] Keempat anggota benar-benar meninjau dan menyepakati draft.
+Gunakan DB_NAME yang sama dengan database lama tim. DB_PASSWORD mengikuti MySQL lokal. SQLyog adalah aplikasi untuk melihat database, bukan database terpisah.
 
-M1 siap untuk review tim dan pembagian kerja; checklist persetujuan tidak dicentang atas nama orang lain.
+```powershell
+npm run auth:keys
+npm run db:migrate
+npm start
+```
+
+Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, dan auth_sessions. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
+
+3. Terminal kedua, pada laravel-web:
+
+```powershell
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
+php artisan optimize:clear
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Copy-Item hanya jika .env belum ada. Pastikan SOA_API_BASE_URL=http://127.0.0.1:3001/api/v1. Gunakan alamat web yang konsisten: http://127.0.0.1:8000. Tidak ada perintah npm/Vite di folder Laravel. Tidak perlu php artisan migrate untuk membuat tabel bisnis/user.
+
+4. Buka http://127.0.0.1:8000/register, buat akun, lalu login. Dashboard ada di /app/dashboard; transaksi ada di /app/transactions. Akun seed lama tidak mempunyai password publik; gunakan register. Login baru tetap dapat memverifikasi hash scrypt$... dari versi lama. Akun lama yang pernah tersimpan plaintext tidak dianggap password valid.
+5. Di SQLyog, sambungkan ke host/port/database yang sama dengan .env Node. Refresh tabel users lalu jalankan SELECT id,name,email,role,createdAt FROM users ORDER BY id DESC; password tersimpan sebagai hash, bukan teks biasa. Transaksi tersimpan di transactions dengan type income/expense.
+
+Jika tampilan terasa versi lama, bersihkan service worker/cache situs dari browser. Service worker paket ini memakai versi baru dan hanya menyimpan aset statis serta halaman offline, tidak menyimpan HTML/API/transaksi/token.
+
+## Alur dan batas fitur
+
+Browser → route/controller Laravel → AuthApi/FinanceApi → Express /api/v1 → middleware JWT/session/role → controller → Sequelize/MySQL.
+
+- Login/register/logout aktif. JWT disimpan pada session server Laravel; tidak ada access token di sessionStorage/localStorage. Refresh token HttpOnly berotasi dan hash token disimpan di auth_sessions. Logout mencabut sesi API; akun yang dihapus tidak dapat memakai token lama.
+- User biasa hanya mengakses datanya. Admin mendapat akses lintas akun pada resource sesuai matriks di RANCANGAN.md. Register tidak menerima role. API key/tier/rate-limit W8 masih model dasar; tidak diklaim sebagai fitur middleware aktif pada milestone ini.
+- Transaction.type: income/expense. Create tanpa type mempertahankan kompatibilitas default expense. PUT wajib type, id_category, nominal dan catatan; PATCH menerima perubahan sebagian dan tidak boleh kosong. Owner tidak boleh dipindahkan melalui PUT/PATCH.
+- Nominal DECIMAL(15,2), nonnegatif; response berupa string dua desimal. Alokasi Budget tetap DECIMAL(10,2), positif. Tidak ada konversi nominal pembukuan melalui float.
+- ORM/raw memakai satu filter plan dan mengembalikan data/meta setara. Raw memakai named replacements. Urutan kolom/arah hanya whitelist; ID/query berbahaya ditolak.
+- Tanggal filter adalah tanggal bisnis Asia/Jakarta, inklusif tanggal akhir. Disimpan/dibandingkan dalam UTC. createdAt mengikuti waktu pencatatan; form belum mengubah tanggal transaksi historis. Data lama tidak digeser zona waktunya saat migrasi.
+- GET /transactions/summary dan /dashboard/summary memakai agregasi SQL yang sama. Seluruh filter data berlaku pada agregasi; limit/offset tidak membatasi total. Selisih diberi label arus kas tercatat, bukan saldo bank.
+- Budget–Category N:M tetap melalui budget_categories. Summary hanya menghitung expense pada kategori yang dialokasikan, periode Jakarta yang sama.
+- Dashboard awal: pemasukan, pengeluaran, selisih dan transaksi terbaru dari API. Dashboard lanjutan/grafik/kuota/tagihan tetap pekerjaan milestone Rafael.
+- Midtrans masih pembacaan status order dan kurs masih integrasi estimasi. Checkout, wallet, AI, wish, recurring, PDF dan bank tidak ditambahkan pada milestone arus kas ini.
+
+## API dan Postman
+
+Base URL: http://127.0.0.1:3001/api/v1. Endpoint bisnis lama tetap ada dengan proteksi akses baru. Total aktif 39 pasangan method/path di prefix tersebut, termasuk alias auth; GET / adalah metadata.
+
+| Endpoint baru | Fungsi |
+|---|---|
+| POST /auth/register | Membuat user biasa, hash password |
+| POST /auth/login | Access JWT dan cookie refresh |
+| POST /auth/refresh | Rotasi refresh, access JWT baru |
+| POST /auth/logout | Mencabut sesi, menghapus cookie |
+| GET /auth/me | Profil user login |
+| GET /transactions/summary | Agregasi income/expense/selisih |
+| GET /dashboard/summary | Agregasi yang sama untuk dashboard |
+
+GET /auth/refresh dan GET /auth/profile adalah alias kompatibilitas. Daftar seluruh route: docs/ENDPOINTS_EXISTING.md.
+
+Impor postman/ProjectSOA-ArusKas.postman_collection.json dan postman/ProjectSOA-Local.postman_environment.json. Pilih environment, pastikan baseUrl benar, lalu jalankan SEMUA request berurutan dengan Collection Runner. 68 request membuat akun A/B unik, menyimpan ID/JWT otomatis, menguji positif/negatif, CRUD, agregasi, Budget, ownership ORM/raw, refresh dan logout. Jangan mulai dari request tengah sebelum variabel fixture tersedia. Koleksi meninggalkan akun uji berlabel Postman agar penyimpanan SQL dapat diperiksa; transaksi/Budget fixture dibersihkan.
+
+401 tanpa login, 403 akses admin, 404 resource milik user lain, 400 input tidak valid dan 409 konflik adalah hasil yang BENAR pada skenario negatif. Integrasi provider tanpa key/order menghasilkan 503 yang terkontrol. Lolosnya status ini tidak berarti provider asli berhasil dipanggil.
+
+Postman lama disimpan di postman/legacy sebagai referensi sebelum ownership; jangan menjalankannya sebagai koleksi aktif.
+
+Contoh body create:
+
+```json
+{"id_category":1,"type":"income","nominal":"1500000.00","catatan":"Gaji"}
+```
+
+Owner biasa selalu dari req.user.id. id_user legacy yang sama masih diterima pada create/PUT; ID user berbeda ditolak, dan PUT/PATCH tidak bisa memindahkan pemilik. user_id pada query admin boleh memilih akun; user biasa hanya boleh ID sendiri.
+
+Filter GET transaksi: search, type, category_id, start_date, end_date, period (YYYY-MM), sort_by=createdAt/nominal/id_transaction, sort=asc/desc, limit 1..100, offset>=0, mode=orm/raw, minNominal, maxNominal, user_id. Gunakan period ATAU rentang tanggal. Nested /users/:id/transactions dan /categories/:id/transactions memakai filter/ownership yang sama.
+
+## Admin dan pemeriksaan
+
+Daftarkan akun operator terlebih dahulu, lalu hanya dari terminal tepercaya:
+
+```powershell
+npm run user:admin -- email-operator-anda
+```
+
+Tidak ada password/admin default. User biasa tidak dapat menaikkan role lewat API. Operator dapat login lagi untuk memakai Postman dengan bearer JWT miliknya.
+
+```powershell
+npm test
+npm run test:mysql
+cd laravel-web
+php artisan test
+```
+
+npm test menjalankan unit/model/evidence; suite DB nyata dilewati tanpa RUN_MYSQL_TESTS. npm run test:mysql menjalankan suite nyata menggunakan DB_HOST/DB_PORT/DB_USER/DB_PASSWORD dari .env. Buat izin CREATE/DROP hanya pada database uji soa_test_*; runner membuat nama unik dan menghapus HANYA database uji itu setelah selesai. TEST_DB_PORT/TEST_DB_HOST/TEST_DB_NAME dapat digunakan untuk server uji terpisah; TEST_DB_NAME wajib berawalan soa_test_. Jangan menunjuk database produksi.
+
+Lihat docs/VERIFIKASI_ARUS_KAS.md untuk hasil aktual dan batas pengujian. Rancangan/matriks akses: RANCANGAN.md. Dokumen M1/wireframe lama di docs/legacy dan frontend adalah referensi historis, bukan status runtime terbaru.

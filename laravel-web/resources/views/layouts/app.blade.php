@@ -29,8 +29,7 @@
                         name="home" />Ringkasan</a>
                 <a class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}"
                     href="{{ route('expenses.index') }}"
-                    @if (request()->routeIs('expenses.*')) aria-current="page" @endif><x-icon
-                        name="receipt" />Pengeluaran</a>
+                    @if (request()->routeIs('expenses.*')) aria-current="page" @endif><x-icon name="receipt" />Transaksi</a>
                 <a class="nav-link {{ request()->routeIs('budgets.*') ? 'active' : '' }}"
                     href="{{ route('budgets.index') }}"
                     @if (request()->routeIs('budgets.*')) aria-current="page" @endif><x-icon name="chart" />Anggaran</a>
@@ -50,12 +49,13 @@
                 <a class="mobile-brand" href="{{ route('dashboard') }}"><span class="brand-mark"><x-icon
                             name="wallet" /></span>ProjectSOA</a>
                 <span class="desktop-label">Ruang keuangan pribadi</span>
-                <div class="topbar-actions"><span class="preview-badge"><span class="status-dot"></span>Akun uji
-                        lokal</span><a class="icon-button" href="{{ route('application') }}"
-                        aria-label="Pengaturan aplikasi"><x-icon name="phone" /></a></div>
+                <div class="topbar-actions"><span class="account-name">{{ session('soa.user.name') }}</span>
+                    <form method="post" action="{{ route('logout') }}">@csrf<button
+                            class="button secondary compact-button" type="submit">Keluar</button></form>
+                </div>
             </header>
             <main id="main-content" class="main-content" tabindex="-1">
-                <p class="mobile-preview">Pratinjau lokal · akun uji</p>
+
                 <div class="offline-banner" data-offline hidden role="status"><x-icon name="offline" />Koneksi
                     terputus. Perubahan belum bisa disimpan.</div>
                 @if (session('success'))
@@ -85,7 +85,7 @@
             class="{{ request()->routeIs('expenses.index', 'expenses.edit') ? 'active' : '' }}"
             @if (request()->routeIs('expenses.index', 'expenses.edit')) aria-current="page" @endif><x-icon
                 name="receipt" /><span>Catatan</span></a>
-        <a class="add-nav" href="{{ route('expenses.create') }}" aria-label="Tambah pengeluaran"
+        <a class="add-nav" href="{{ route('expenses.create') }}" aria-label="Tambah transaksi"
             @if (request()->routeIs('expenses.create')) aria-current="page" @endif><span class="add-nav-icon"><x-icon
                     name="plus" /></span><span>Tambah</span></a>
         <a href="{{ route('budgets.index') }}" class="{{ request()->routeIs('budgets.*') ? 'active' : '' }}"
@@ -97,8 +97,8 @@
     </nav>
     <dialog id="confirm-dialog" class="dialog" aria-labelledby="confirm-title">
         <div class="dialog-icon"><x-icon name="trash" /></div>
-        <h2 id="confirm-title">Hapus pengeluaran?</h2>
-        <p>Catatan ini akan dihapus dari daftar pengeluaran Anda.</p>
+        <h2 id="confirm-title">Hapus transaksi?</h2>
+        <p>Catatan ini akan dihapus dari daftar transaksi Anda.</p>
         <div class="dialog-actions"><button type="button" class="button secondary"
                 data-close-dialog>Batal</button><button type="button" class="button destructive"
                 data-confirm-delete>Ya, hapus</button></div>

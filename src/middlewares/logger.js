@@ -12,7 +12,7 @@ const logger = (req, res, next) => {
 
   // res.on("finish") berjalan SETELAH response terkirim,
   // jadi di sini kita sudah tahu status code-nya.
-  res.on("finish", () => {
+  res.on('finish', () => {
     const durasi = Date.now() - mulai;
     console.log(`${req.method} ${req.originalUrl} -> ${res.statusCode} (${durasi}ms)`);
   });

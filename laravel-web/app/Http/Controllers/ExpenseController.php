@@ -3,67 +3,72 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpenseRequest;
+use App\Services\CurrentUserContext;
 use App\Services\FinanceApi;
-use App\Services\FinanceOverview;
-use App\Services\PreviewUserContext;
 use App\Support\Money;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\View\View;
 
 class ExpenseController extends Controller
 {
-    public function index(Request $request, FinanceApi $api, PreviewUserContext $context, FinanceOverview $overview): View
+    public function index(Request $request, FinanceApi $api)
     {
-        $filters = $request->validate(['period' => ['nullable', 'date_format:Y-m'], 'search' => ['nullable', 'string', 'max:255'], 'category' => ['nullable', 'integer', 'min:1'], 'page' => ['nullable', 'integer', 'min:1']]);
-        $period = $filters['period'] ?? now()->format('Y-m');
-        $rows = $overview->period(collect($api->expenses($context->id())), $period);
-        if (! empty($filters['search'])) {
-            $rows = $rows->filter(fn (array $row): bool => mb_stripos((string) ($row['catatan'] ?? ''), $filters['search']) !== false);
-        }
-        if (! empty($filters['category'])) {
-            $rows = $rows->where('id_category', (int) $filters['category']);
-        }
+        $filters = $request->validate(['period' => ['nullable', 'date_format:Y-m'], 'search' => ['nullable', 'string', 'max:255'], 'category_id' => ['nullable', 'integer', 'min:1'], 'type' => ['nullable', 'in:income,expense'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'], 'end_date' => ['nullable', 'date_format:Y-m-d', ...($request->filled('start_date') ? ['after_or_equal:start_date'] : [])],
+            'sort' => ['nullable', 'in:asc,desc'], 'sort_by' => ['nullable', 'in:createdAt,nominal,id_transaction'], 'mode' => ['nullable', 'in:orm,raw'], 'page' => ['nullable', 'integer', 'min:1', 'max:1000000']]);
         $page = (int) ($filters['page'] ?? 1);
+        unset($filters['page']);
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+        if (empty($filters['start_date']) && empty($filters['end_date']) && empty($filters['period'])) {
+            $filters['period'] = now()->format('Y-m');
+        }
+        if (isset($filters['start_date']) || isset($filters['end_date'])) {
+            unset($filters['period']);
+        }
+        $list = $api->transactions([...$filters, 'limit' => 10, 'offset' => ($page - 1) * 10]);
 
-        return view('expenses.index', ['expenses' => new LengthAwarePaginator($rows->values()->slice(($page - 1) * 10, 10), $rows->count(), 10, $page,
-            ['path' => route('expenses.index'), 'query' => $request->except('page')]), 'categories' => $api->categories(), 'period' => $period, 'total' => $overview->total($rows)]);
+        return view('expenses.index', ['expenses' => new LengthAwarePaginator($list['data'], $list['meta']['total'], 10, $page, ['path' => route('expenses.index'), 'query' => $request->except('page')]),
+            'summary' => $api->cashFlow($filters), 'categories' => $api->categories(), 'filters' => $filters]);
     }
 
-    public function create(FinanceApi $api): View
+    public function create(FinanceApi $api)
     {
         return view('expenses.form', ['expense' => null, 'categories' => $api->categories()]);
     }
 
-    public function store(ExpenseRequest $request, FinanceApi $api, PreviewUserContext $context): RedirectResponse
+    private function values(ExpenseRequest $request): array
     {
-        $values = $request->safe()->only(['id_category', 'nominal', 'catatan']);
+        $values = $request->safe()->only(['type', 'id_category', 'nominal', 'catatan']);
+        $values['id_category'] = (int) $values['id_category'];
         $values['nominal'] = Money::decimal(Money::cents($values['nominal']));
-        $api->createExpense($context->id(), $values);
 
-        return to_route('expenses.index')->with('success', 'Pengeluaran berhasil ditambahkan.');
+        return $values;
     }
 
-    public function edit(int $id, FinanceApi $api, PreviewUserContext $context): View
+    public function store(ExpenseRequest $request, FinanceApi $api, CurrentUserContext $context)
+    {
+        $api->createExpense($context->id(), $this->values($request));
+
+        return to_route('expenses.index')->with('success', 'Transaksi berhasil ditambahkan.');
+    }
+
+    public function edit(int $id, FinanceApi $api, CurrentUserContext $context)
     {
         return view('expenses.form', ['expense' => $api->expense($id, $context->id()), 'categories' => $api->categories()]);
     }
 
-    public function update(int $id, ExpenseRequest $request, FinanceApi $api, PreviewUserContext $context): RedirectResponse
+    public function update(int $id, ExpenseRequest $request, FinanceApi $api, CurrentUserContext $context)
     {
-        $values = $request->safe()->only(['nominal', 'catatan']);
-        $values['nominal'] = Money::decimal(Money::cents($values['nominal']));
-        $api->updateExpense($id, $context->id(), $values);
+        $api->updateExpense($id, $context->id(), $this->values($request));
 
-        return to_route('expenses.index')->with('success', 'Pengeluaran berhasil diperbarui.');
+        return to_route('expenses.index')->with('success', 'Transaksi berhasil diperbarui.');
     }
 
-    public function destroy(int $id, Request $request, FinanceApi $api, PreviewUserContext $context): RedirectResponse
+    public function destroy(int $id, Request $request, FinanceApi $api, CurrentUserContext $context)
     {
-        $request->validate(['user_id' => ['prohibited'], 'id_user' => ['prohibited']]);
+        $request->validate(['id_user' => ['prohibited'], 'user_id' => ['prohibited']]);
         $api->deleteExpense($id, $context->id());
 
-        return to_route('expenses.index')->with('success', 'Pengeluaran berhasil dihapus.');
+        return to_route('expenses.index')->with('success','Transaksi berhasil dihapus.');
     }
 }

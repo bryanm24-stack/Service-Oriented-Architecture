@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\GenericUser;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Auth::viaRequest('soa-session', function ($request) {
+            $user = $request->session()->get('soa.user');
+
+            return is_array($user) && isset($user['id']) ? new GenericUser($user) : null;
+        });
     }
 }

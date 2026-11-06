@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-06",
+  "node_unit": {
+    "passed": 11,
+    "failed": 0,
+    "mysql_suite_skipped_here": 1
+  },
+  "real_database_http": {
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0,
+    "server": "MariaDB 10.11.14"
+  },
+  "laravel": {
+    "tests": 13,
+    "assertions": 80,
+    "failed": 0
+  },
+  "newman": {
+    "requests": 68,
+    "assertions": 85,
+    "failed": 0
+  },
+  "live_http_forms": "passed",
+  "chromium_click_visual": "not run: AF_UNIX sockets unavailable",
+  "provider_live_credentials": "not tested"
+}

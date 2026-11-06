@@ -1,45 +1,57 @@
 const jwt = require('jsonwebtoken');
-
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'access_secret_w7';
-
-// 1. verifyJWT: Memeriksa Access Token dari Header Authorization
-const verifyJWT = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized: Token akses tidak ditemukan.' });
+const { User, AuthSession } = require('../models');
+const httpError = require('../utils/httpError');
+const settings = () => {
+  const secret = process.env.JWT_ACCESS_SECRET;
+  if (!secret || secret.length < 32)
+    throw httpError(503, 'JWT belum dikonfigurasi; jalankan npm run auth:keys');
+  return {
+    secret,
+    issuer: process.env.JWT_ISSUER || 'projectsoa',
+    audience: process.env.JWT_AUDIENCE || 'projectsoa-clients',
+  };
+};
+const verifyJWT = async (req, res, next) => {
+  try {
+    const match = /^Bearer ([^ ]+)$/i.exec(req.get('Authorization') || '');
+    if (!match) return res.status(401).json({ message: 'Silakan login terlebih dahulu' });
+    const config = settings();
+    let decoded;
+    try {
+      decoded = jwt.verify(match[1], config.secret, {
+        algorithms: ['HS256'],
+        issuer: config.issuer,
+        audience: config.audience,
+      });
+    } catch {
+      return res.status(401).json({ message: 'Sesi tidak valid atau kedaluwarsa' });
+    }
+    if (!/^[1-9]\d*$/.test(decoded.sub || '') || !decoded.sid)
+      return res.status(401).json({ message: 'Sesi tidak valid' });
+    const [user, session] = await Promise.all([
+      User.findByPk(Number(decoded.sub)),
+      AuthSession.findByPk(decoded.sid),
+    ]);
+    if (
+      !user ||
+      !session ||
+      session.user_id !== user.id ||
+      session.revoked_at ||
+      new Date(session.expires_at) <= new Date()
+    )
+      return res.status(401).json({ message: 'Sesi sudah berakhir' });
+    req.user = {
+      id: user.id,
+      role: user.role === 'admin' ? 'admin' : 'user',
+      sessionId: session.id,
+    };
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  jwt.verify(token, ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Unauthorized: Token tidak valid atau kedaluwarsa.' });
-    }
-    // Menyimpan payload token ke req.user ({ id, role })
-    req.user = decoded;
-    next();
-  });
 };
-
-// 2. checkRoles: Role-Based Access Control (RBAC)
-const checkRoles = (allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Forbidden: Anda tidak memiliki hak akses.' });
-    }
-    next();
-  };
-};
-
-// 3. checkOwnership: Memastikan user hanya bisa mengakses datanya sendiri (atau jika Admin)
-const checkOwnership = (resourceUserId) => {
-  return (req, res, next) => {
-    if (req.user.role === 'admin') return next();
-    if (req.user.id !== resourceUserId) {
-      return res.status(403).json({ error: 'Forbidden: Anda bukan pemilik resource ini.' });
-    }
-    next();
-  };
-};
-
-module.exports = { verifyJWT, checkRoles, checkOwnership };
+const checkRoles = (roles) => (req, res, next) =>
+  roles.includes(req.user?.role)
+    ? next()
+    : res.status(403).json({ message: 'Akses khusus administrator' });
+module.exports = { verifyJWT, checkRoles, settings };

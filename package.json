@@ -1,25 +1,32 @@
 {
-    "name": "soa-minggu6",
-    "version": "1.0.0",
-    "description": "REST API Asisten Keuangan - 30 endpoint",
-    "main": "index.js",
-    "scripts": {
-        "start": "node index.js",
-        "dev": "node --watch index.js",
-        "db:migrate": "node scripts/migrate.js",
-        "test": "node --test tests/*.test.js",
-        "midtrans:check": "node scripts/cek-midtrans.js"
-    },
-    "engines": {
-        "node": "24.x"
-    },
-    "license": "ISC",
-    "dependencies": {
-        "dotenv": "^16.4.5",
-        "express": "^4.21.2",
-        "joi": "^17.13.3",
-        "axios": "^1.7.9",
-        "mysql2": "^3.24.4",
-        "sequelize": "^6.37.8"
-    }
+  "name": "soa-minggu6",
+  "version": "1.0.0",
+  "description": "REST API Asisten Keuangan - 30 endpoint",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "db:migrate": "node scripts/migrate.js",
+    "test": "node --test tests/*.test.js",
+    "midtrans:check": "node scripts/cek-midtrans.js",
+    "auth:keys": "node scripts/auth-keys.js",
+    "test:mysql": "node scripts/test-mysql.js",
+    "user:admin": "node scripts/promote-admin.js",
+    "evidence:budget": "node scripts/bukti-budget-join.js"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.4",
+    "sequelize": "^6.37.8"
+  }
 }
