@@ -25,6 +25,11 @@
         if (form.hasAttribute('data-confirm') && !form.hasAttribute('data-confirmed')) {
             event.preventDefault();
             pendingDelete = form;
+            if (confirmDialog) {
+                confirmDialog.querySelector('#confirm-title').textContent = form.dataset.confirmTitle || 'Hapus transaksi?';
+                confirmDialog.querySelector('[data-confirm-description]').textContent = form.dataset.confirmDescription || 'Catatan ini akan dihapus dari daftar transaksi Anda.';
+                confirmDialog.querySelector('[data-confirm-delete]').textContent = form.dataset.confirmLabel || 'Ya, hapus';
+            }
             if (confirmDialog) confirmDialog.showModal();
             return;
         }

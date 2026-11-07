@@ -59,7 +59,12 @@ const main = async () => {
         'ALTER TABLE transactions ADD INDEX idx_transactions_owner_type_date (id_user,type,createdAt)',
       );
 
-    console.log('[migrate] Gabungan.sql selesai. Data lama tidak dikosongkan.');
+    const tokenMigration = fs.readFileSync(
+      path.join(__dirname, '..', 'sql', 'migrations', '20261106_05_tokens.sql'), 'utf8',
+    );
+    await connection.query(tokenMigration);
+
+    console.log('[migrate] Gabungan.sql + SOA-20261106-05 selesai. Data lama tidak dikosongkan.');
   } finally {
     await connection.end();
   }

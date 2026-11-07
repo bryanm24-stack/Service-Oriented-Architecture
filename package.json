@@ -12,7 +12,9 @@
     "auth:keys": "node scripts/auth-keys.js",
     "test:mysql": "node scripts/test-mysql.js",
     "user:admin": "node scripts/promote-admin.js",
-    "evidence:budget": "node scripts/bukti-budget-join.js"
+    "evidence:budget": "node scripts/bukti-budget-join.js",
+    "db:seed:tokens": "node scripts/seed-token-bundles.js",
+    "test:tokens": "node --test tests/tokens.test.js tests/tokens-mysql.test.js"
   },
   "engines": {
     "node": "24.x"

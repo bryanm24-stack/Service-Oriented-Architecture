@@ -38,6 +38,26 @@ final class FinanceApi
         return $this->request('GET', '/categories')['data'];
     }
 
+    public function category(int $id): array
+    {
+        return $this->request('GET', '/categories/'.$id)['data'];
+    }
+
+    public function createCategory(array $values): void
+    {
+        $this->request('POST', '/categories', $values);
+    }
+
+    public function replaceCategory(int $id, array $values): void
+    {
+        $this->request('PUT', '/categories/'.$id, $values);
+    }
+
+    public function deleteCategory(int $id): void
+    {
+        $this->request('DELETE', '/categories/'.$id);
+    }
+
     public function expense(int $id, int $userId): array
     {
         return $this->request('GET', '/transactions/'.$id)['data'];
@@ -65,6 +85,6 @@ final class FinanceApi
 
     public function budgetSummary(int $id, int $userId): array
     {
-        return $this->request('GET','/budgets/'.$id.'/summary')['data'];
+        return $this->request('GET', '/budgets/'.$id.'/summary')['data'];
     }
 }

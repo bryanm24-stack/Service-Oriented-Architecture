@@ -1,3 +1,5 @@
+> Update SOA-20261106-05: TokenBundle/TokenPurchase dan UI katalog/order lokal sudah diimplementasikan. Kontrak terkini ada di [docs/SOA-20261106-05.md](docs/SOA-20261106-05.md). Pembayaran, wallet/ledger, tier dan subscription belum diaktifkan.
+
 # Rancangan Asisten Keuangan — milestone arus kas
 
 ## Domain dan consumer

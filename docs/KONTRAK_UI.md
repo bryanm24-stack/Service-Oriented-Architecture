@@ -1,3 +1,5 @@
+> Update SOA-20261106-05: halaman /app/token-bundles, /app/token-purchases serta /app/admin/token-bundles dan /app/admin/categories tersedia. DataTable, FormField dan StatusBadge Blade dipakai bersama; menu admin hanya untuk role admin yang diverifikasi API. Lihat [SOA-20261106-05.md](SOA-20261106-05.md) untuk status, kontrak dan batas pembayaran.
+
 # Kontrak UI aktif — milestone arus kas
 
 Tampilan aktif memakai Laravel + Blade, CSS/JS lokal dan satu `layouts/app.blade.php`. Login/register berbagi `layouts/auth.blade.php`; navbar/sidebar dan navigasi bawah mobile tetap bersama. Semua aset CSP self, tanpa inline script atau Tailwind CDN.

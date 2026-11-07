@@ -39,6 +39,13 @@
                 <a class="nav-link {{ request()->routeIs('application') ? 'active' : '' }}"
                     href="{{ route('application') }}"
                     @if (request()->routeIs('application')) aria-current="page" @endif><x-icon name="phone" />Aplikasi</a>
+                <a class="nav-link {{ request()->routeIs('tokens.*', 'token-purchases.*') ? 'active' : '' }}" href="{{ route('tokens.index') }}"
+                    @if(request()->routeIs('tokens.*', 'token-purchases.*')) aria-current="page" @endif><x-icon name="sparkle" />Paket token</a>
+                @if(session('soa.user.role') === 'admin')
+                    <p class="nav-label">Administrator</p>
+                    <a class="nav-link {{ request()->routeIs('admin.bundles.*') ? 'active' : '' }}" href="{{ route('admin.bundles.index') }}">Kelola paket</a>
+                    <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">Kelola kategori</a>
+                @endif
             </nav>
             <div class="sidebar-bottom"><span class="small-label">Satu langkah lebih teratur.</span>
                 <p>Kenali pengeluaran hari ini untuk merencanakan hari esok.</p>
@@ -54,6 +61,14 @@
                             class="button secondary compact-button" type="submit">Keluar</button></form>
                 </div>
             </header>
+            <nav class="mobile-catalog-nav" aria-label="Katalog dan pengelolaan">
+                <a href="{{ route('tokens.index') }}" @if(request()->routeIs('tokens.*')) aria-current="page" @endif>Paket token</a>
+                <a href="{{ route('token-purchases.index') }}" @if(request()->routeIs('token-purchases.*')) aria-current="page" @endif>Order saya</a>
+                @if(session('soa.user.role') === 'admin')
+                    <a href="{{ route('admin.bundles.index') }}" @if(request()->routeIs('admin.bundles.*')) aria-current="page" @endif>Kelola paket</a>
+                    <a href="{{ route('admin.categories.index') }}" @if(request()->routeIs('admin.categories.*')) aria-current="page" @endif>Kelola kategori</a>
+                @endif
+            </nav>
             <main id="main-content" class="main-content" tabindex="-1">
 
                 <div class="offline-banner" data-offline hidden role="status"><x-icon name="offline" />Koneksi
@@ -98,7 +113,7 @@
     <dialog id="confirm-dialog" class="dialog" aria-labelledby="confirm-title">
         <div class="dialog-icon"><x-icon name="trash" /></div>
         <h2 id="confirm-title">Hapus transaksi?</h2>
-        <p>Catatan ini akan dihapus dari daftar transaksi Anda.</p>
+        <p data-confirm-description>Catatan ini akan dihapus dari daftar transaksi Anda.</p>
         <div class="dialog-actions"><button type="button" class="button secondary"
                 data-close-dialog>Batal</button><button type="button" class="button destructive"
                 data-confirm-delete>Ya, hapus</button></div>

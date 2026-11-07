@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 final class AuthApi
 {
-    public function send(string $method, string $path, array $data = [], bool $authenticated = false): Response
+    public function send(string $method, string $path, array $data = [], bool $authenticated = false, array $headers = []): Response
     {
         $base = rtrim((string) config('soa.api_base_url'), '/');
         $url = parse_url($base);
@@ -21,6 +21,7 @@ final class AuthApi
         }
         try {
             $client = Http::acceptJson()->asJson()->connectTimeout(3)->timeout(10)->withoutRedirecting();
+            $client = $client->withHeaders($headers);
             if ($authenticated) {
                 $client = $client->withToken((string) Session::get('soa.access_token'));
             }
@@ -28,7 +29,7 @@ final class AuthApi
                 $client = $client->withCookies(['refreshToken' => Session::get('soa.refresh_token')], $url['host']);
             }
 
-            return $method === 'GET' ? $client->get($base.$path, $data) : $client->send($method, $base.$path, ['json' => $data]);
+            return $method === 'GET' ? $client->get($base.$path, $data) : $client->send($method, $base.$path, ['json' => $data === [] ? (object) [] : $data]);
         } catch (ConnectionException $error) {
             throw new ApiUnavailable($method === 'GET' ? 'Layanan data belum dapat dihubungi. Coba lagi.' : 'Status penyimpanan belum dapat dipastikan. Periksa data sebelum mengulangi.', previous: $error);
         }
@@ -78,15 +79,15 @@ final class AuthApi
         $this->remember($response);
     }
 
-    public function authorized(string $method, string $path, array $values = []): Response
+    public function authorized(string $method, string $path, array $values = [], array $headers = []): Response
     {
         if (! Session::has('soa.access_token')) {
             $this->endSession();
         }
-        $response = $this->send($method, $path, $values, true);
+        $response = $this->send($method, $path, $values, true, $headers);
         if ($response->status() === 401) {
             $this->refresh();
-            $response = $this->send($method, $path, $values, true);
+            $response = $this->send($method, $path, $values, true, $headers);
             if ($response->status() === 401) {
                 $this->endSession();
             }
@@ -136,7 +137,7 @@ final class AuthApi
                 }
             }
             if (! $errors) {
-                $errors['_api'][] = $response->status() === 409 ? 'Email sudah terdaftar atau terjadi konflik data.' : ($response->status() === 401 ? 'Email atau password salah.' : 'Periksa seluruh isian Anda.');
+                $errors['_api'][] = $response->status() === 409 ? 'Terjadi konflik data. Periksa kembali order atau isian Anda.' : ($response->status() === 401 ? 'Email atau password salah.' : 'Periksa seluruh isian Anda.');
             }
             throw ValidationException::withMessages($errors);
         }

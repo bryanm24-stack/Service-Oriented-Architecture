@@ -10,9 +10,13 @@ const ApiTier = require('./api/ApiTier');
 const ApiLog = require('./api/ApiLog');
 
 const AuthSession = require('./AuthSession');
+const TokenBundle = require('./TokenBundle');
+const TokenPurchase = require('./TokenPurchase');
 
 const db = {
   AuthSession,
+  TokenBundle,
+  TokenPurchase,
   User,
   Category,
   Transaction,
@@ -112,6 +116,11 @@ ApiLog.belongsTo(ApiClient, {
 
 User.hasMany(AuthSession, { foreignKey: 'user_id', as: 'auth_sessions', onDelete: 'RESTRICT' });
 AuthSession.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
+
+User.hasMany(TokenPurchase, { foreignKey: 'user_id', as: 'token_purchases', onDelete: 'RESTRICT' });
+TokenPurchase.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
+TokenBundle.hasMany(TokenPurchase, { foreignKey: 'token_bundle_id', as: 'purchases', onDelete: 'RESTRICT' });
+TokenPurchase.belongsTo(TokenBundle, { foreignKey: 'token_bundle_id', as: 'bundle', onDelete: 'RESTRICT' });
 db.sequelize = sequelize;
 
 module.exports = db;

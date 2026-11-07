@@ -23,6 +23,7 @@ app.use('/api/v1', routes.transactionRouter);
 app.use('/api/v1/users', routes.userRouter);
 app.use('/api/v1/categories', routes.categoryRouter);
 app.use('/api/v1/budgets', routes.budgetRouter);
+app.use('/api/v1', require('./src/routes/tokens'));
 
 app.use(require('./src/middlewares/notFound'));
 app.use(require('./src/middlewares/errorHandler'));

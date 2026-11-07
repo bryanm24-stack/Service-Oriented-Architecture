@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\AdminCategoryController;
+use App\Http\Controllers\AdminTokenBundleController;
 use App\Http\Controllers\AppController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\TokenController;
+use App\Http\Middleware\EnsureAdministrator;
 use App\Http\Middleware\EnsureApiAuthenticated;
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +30,17 @@ Route::middleware(EnsureApiAuthenticated::class)->group(function () {
     Route::get('/anggaran/{id}', [BudgetController::class, 'show'])->whereNumber('id')->name('budgets.show');
     Route::get('/kategori', CategoryController::class)->name('categories.index');
     Route::get('/aplikasi', AppController::class)->name('application');
+    Route::get('/app/token-bundles', [TokenController::class, 'index'])->name('tokens.index');
+    Route::post('/app/token-bundles/{id}/new-order', [TokenController::class, 'newOrder'])->whereNumber('id')->name('tokens.new-order');
+    Route::get('/app/token-purchases', [TokenController::class, 'purchases'])->name('token-purchases.index');
+    Route::post('/app/token-purchases', [TokenController::class, 'store'])->name('token-purchases.store');
+    Route::get('/app/token-purchases/{orderId}', [TokenController::class, 'show'])->where('orderId', 'SOA-[0-9a-f-]{36}')->name('token-purchases.show');
+    Route::get('/app/token-purchases/{orderId}/checkout', [TokenController::class, 'checkout'])->where('orderId', 'SOA-[0-9a-f-]{36}')->name('token-purchases.checkout');
+    Route::middleware(EnsureAdministrator::class)->prefix('app/admin')->name('admin.')->where(['id' => '[0-9]+'])->group(function () {
+        Route::resource('token-bundles', AdminTokenBundleController::class)->except('show')->parameters(['token-bundles' => 'id'])->names('bundles');
+        Route::resource('categories', AdminCategoryController::class)->except('show')->parameters(['categories' => 'id']);
+    });
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/pengeluaran', fn () => redirect()->route('expenses.index', request()->query()));
-    Route::redirect('/pengeluaran/tambah','/app/transactions/create');
+    Route::redirect('/pengeluaran/tambah', '/app/transactions/create');
 });

@@ -1,6 +1,16 @@
-# ProjectSOA — Arus Kas, Login/Register dan Ownership
+# ProjectSOA — Katalog Token dan Order Lokal
 
 Express + Sequelize + MySQL sebagai API; Laravel 13 + Blade sebagai web/PWA. Tidak ada database user Laravel kedua. Register pada web memanggil POST /api/v1/auth/register; akun masuk ke tabel users pada database Node yang ditentukan DB_NAME dan dapat dilihat melalui SQLyog.
+
+## SOA-20261106-05 — paket dan order lokal
+
+Katalog token, order pending dengan snapshot, idempotency key, halaman admin paket/kategori, dan kartu pengguna sudah ditambahkan. Checkout dan pemberian kuota belum aktif. Kontrak endpoint, pengujian, serta handoff Dana ada di [docs/SOA-20261106-05.md](docs/SOA-20261106-05.md).
+
+Upgrade: jalankan `npm ci`, `npm run db:migrate`, dan `composer install` pada `laravel-web`, kemudian `php artisan optimize:clear`. Untuk contoh harga pengembangan saja, jalankan `npm run db:seed:tokens`. Seed tidak otomatis dijalankan oleh migrasi dan tidak menimpa harga paket yang telah diedit.
+
+Pengguna: `/app/token-bundles`, `/app/token-purchases`. Admin: `/app/admin/token-bundles`, `/app/admin/categories`. Daftarkan akun biasa dahulu, lalu jalankan `npm run user:admin -- email-admin@example.com` dari terminal backend untuk menetapkan admin yang dipercaya. Role dibaca ulang dari database pada setiap permintaan API; registrasi/form tidak menerima role.
+
+`resources/views/components/data-table.blade.php`, `form-field.blade.php`, dan `status-badge.blade.php` menjadi komponen bersama katalog. CSS/JS tetap lokal, PWA hanya menyimpan aset statis. `composer.lock` telah diselaraskan dengan platform PHP 8.3 sesuai persyaratan proyek.
 
 ## Mulai di Windows/Laragon
 
@@ -34,7 +44,7 @@ npm run db:migrate
 npm start
 ```
 
-Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, dan auth_sessions. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
+Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, auth_sessions, serta tabel token_bundles/token_purchases. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
 
 3. Terminal kedua, pada laravel-web:
 
@@ -66,11 +76,11 @@ Browser → route/controller Laravel → AuthApi/FinanceApi → Express /api/v1 
 - GET /transactions/summary dan /dashboard/summary memakai agregasi SQL yang sama. Seluruh filter data berlaku pada agregasi; limit/offset tidak membatasi total. Selisih diberi label arus kas tercatat, bukan saldo bank.
 - Budget–Category N:M tetap melalui budget_categories. Summary hanya menghitung expense pada kategori yang dialokasikan, periode Jakarta yang sama.
 - Dashboard awal: pemasukan, pengeluaran, selisih dan transaksi terbaru dari API. Dashboard lanjutan/grafik/kuota/tagihan tetap pekerjaan milestone Rafael.
-- Midtrans masih pembacaan status order dan kurs masih integrasi estimasi. Checkout, wallet, AI, wish, recurring, PDF dan bank tidak ditambahkan pada milestone arus kas ini.
+- Midtrans masih pembacaan status order dan kurs masih integrasi estimasi. Order token lokal kini tersedia; checkout Midtrans, wallet, AI, wish, recurring, PDF dan bank belum ditambahkan oleh milestone token.
 
 ## API dan Postman
 
-Base URL: http://127.0.0.1:3001/api/v1. Endpoint bisnis lama tetap ada dengan proteksi akses baru. Total aktif 39 pasangan method/path di prefix tersebut, termasuk alias auth; GET / adalah metadata.
+Base URL: http://127.0.0.1:3001/api/v1. Endpoint bisnis lama tetap ada dengan proteksi akses baru. Baseline autentikasi/arus kas memiliki 39 pasangan method/path. Milestone token menambah 12 pasangan method/path pada prefix yang sama; GET / adalah metadata. Lihat tabel endpoint token pada dokumen milestone.
 
 | Endpoint baru | Fungsi |
 |---|---|
