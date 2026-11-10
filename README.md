@@ -2,6 +2,10 @@
 
 Express + Sequelize + MySQL sebagai API; Laravel 13 + Blade sebagai web/PWA. Tidak ada database user Laravel kedua. Register pada web memanggil POST /api/v1/auth/register; akun masuk ke tabel users pada database Node yang ditentukan DB_NAME dan dapat dilihat melalui SQLyog.
 
+## SOA-20261108-06 — Wish cash/cicilan
+
+Modul Wish menambahkan rencana pembelian cash/cicilan, simulasi harga, jadwal cicilan dengan snapshot nominal/periode, dan pembayaran yang membuat transaksi pengeluaran beserta referensi transaksinya. Detail endpoint dan aturan bisnis ada di [docs/SOA-20261108-06.md](docs/SOA-20261108-06.md). Setelah menyalin pembaruan, jalankan `npm run db:migrate`; menu **Wish / Cicilan** tersedia di sidebar Laravel.
+
 ## SOA-20261106-05 — paket dan order lokal
 
 Katalog token, order pending dengan snapshot, idempotency key, halaman admin paket/kategori, dan kartu pengguna sudah ditambahkan. Checkout dan pemberian kuota belum aktif. Kontrak endpoint, pengujian, serta handoff Dana ada di [docs/SOA-20261106-05.md](docs/SOA-20261106-05.md).
@@ -44,7 +48,7 @@ npm run db:migrate
 npm start
 ```
 
-Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, auth_sessions, serta tabel token_bundles/token_purchases. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
+Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, auth_sessions, serta tabel token_bundles/token_purchases dan wishes/installment_schedules. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
 
 3. Terminal kedua, pada laravel-web:
 

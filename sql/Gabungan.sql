@@ -1,6 +1,7 @@
 -- DATABASE ASISTEN KEUANGAN
 -- Lima tabel keuangan: users, categories, transactions, budget, budget_categories.
 -- Merge menambahkan api_tiers, api_clients dan api_log; belum ada endpoint API key.
+-- Wish cash/cicilan dipasang oleh runner scripts/migrate.js melalui migrasi tambahan SOA-20261108-06.
 -- Tidak menyertakan tabel dan seed template buku, karakter, atau penulis.
 -- CREATE TABLE IF NOT EXISTS tidak mengubah struktur tabel yang sudah ada.
 -- Impor manual memakai asisten_keuangan; npm run db:migrate mengikuti DB_NAME.

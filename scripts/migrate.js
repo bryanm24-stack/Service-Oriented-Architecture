@@ -64,7 +64,12 @@ const main = async () => {
     );
     await connection.query(tokenMigration);
 
-    console.log('[migrate] Gabungan.sql + SOA-20261106-05 selesai. Data lama tidak dikosongkan.');
+    const wishMigration = fs.readFileSync(
+      path.join(__dirname, '..', 'sql', 'migrations', '20261108_06_wishes.sql'), 'utf8',
+    );
+    await connection.query(wishMigration);
+
+    console.log('[migrate] Gabungan.sql + SOA-20261106-05 + SOA-20261108-06 selesai. Data lama tidak dikosongkan.');
   } finally {
     await connection.end();
   }

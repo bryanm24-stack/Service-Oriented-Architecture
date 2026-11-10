@@ -78,6 +78,47 @@ final class FinanceApi
         $this->request('DELETE', '/transactions/'.$id);
     }
 
+
+    public function wishes(): array
+    {
+        return $this->request('GET', '/wishes')['data'];
+    }
+
+    public function wish(int $id): array
+    {
+        return $this->request('GET', '/wishes/'.$id)['data'];
+    }
+
+    public function simulateWish(array $values): array
+    {
+        return $this->request('POST', '/wishes/simulate', $values)['data'];
+    }
+
+    public function createWish(array $values): array
+    {
+        return $this->request('POST', '/wishes', $values)['data'];
+    }
+
+    public function updateWish(int $id, array $values): array
+    {
+        return $this->request('PUT', '/wishes/'.$id, $values)['data'];
+    }
+
+    public function deleteWish(int $id): void
+    {
+        $this->request('DELETE', '/wishes/'.$id);
+    }
+
+    public function payCashWish(int $id): array
+    {
+        return $this->request('POST', '/wishes/'.$id.'/pay')['data'];
+    }
+
+    public function payInstallment(int $id, int $installmentId): array
+    {
+        return $this->request('POST', '/wishes/'.$id.'/installments/'.$installmentId.'/pay')['data'];
+    }
+
     public function budgets(int $userId): array
     {
         return $this->request('GET', '/users/'.$userId.'/budgets')['data'];

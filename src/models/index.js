@@ -12,11 +12,15 @@ const ApiLog = require('./api/ApiLog');
 const AuthSession = require('./AuthSession');
 const TokenBundle = require('./TokenBundle');
 const TokenPurchase = require('./TokenPurchase');
+const Wish = require('./Wish');
+const InstallmentSchedule = require('./InstallmentSchedule');
 
 const db = {
   AuthSession,
   TokenBundle,
   TokenPurchase,
+  Wish,
+  InstallmentSchedule,
   User,
   Category,
   Transaction,
@@ -113,6 +117,13 @@ ApiLog.belongsTo(ApiClient, {
   as: 'api_client',
   onDelete: 'RESTRICT',
 });
+
+User.hasMany(Wish, { foreignKey: 'user_id', as: 'wishes', onDelete: 'RESTRICT' });
+Wish.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
+Wish.hasMany(InstallmentSchedule, { foreignKey: 'wish_id', as: 'installment_schedules', onDelete: 'CASCADE' });
+InstallmentSchedule.belongsTo(Wish, { foreignKey: 'wish_id', as: 'wish', onDelete: 'CASCADE' });
+InstallmentSchedule.belongsTo(Transaction, { foreignKey: 'transaction_id', as: 'transaction', onDelete: 'RESTRICT' });
+Wish.belongsTo(Transaction, { foreignKey: 'paid_transaction_id', as: 'paid_transaction', onDelete: 'RESTRICT' });
 
 User.hasMany(AuthSession, { foreignKey: 'user_id', as: 'auth_sessions', onDelete: 'RESTRICT' });
 AuthSession.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
