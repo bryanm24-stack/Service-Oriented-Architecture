@@ -1,4 +1,4 @@
-const { Category, Transaction } = require('../models');
+const { Category, Transaction, RecurringCost } = require('../models');
 const {
   parse,
   idSchema,
@@ -91,6 +91,9 @@ const deleteCategory = async (req, res) => {
     return res.status(409).json({
       msg: 'Category masih memiliki transaksi',
     });
+  }
+  if (await RecurringCost.count({ where: { category_id: id, status: 'active' } })) {
+    return res.status(409).json({ msg: 'Category masih digunakan template recurring aktif' });
   }
 
   // FK RESTRICT juga menjaga kondisi balapan dengan transaksi baru.

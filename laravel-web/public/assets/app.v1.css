@@ -128,6 +128,14 @@ button:disabled {
 .wide {
     grid-column: 1/-1;
 }
+.recurring-list { display: grid; gap: 16px; }
+.recurring-card { min-width: 0; }
+.recurring-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.recurring-details strong { overflow-wrap: anywhere; }
+.recurring-schedules { margin-top: 16px; }
+.recurring-preview { margin-top: 20px; padding: 16px; }
+.recurring-preview-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+@media (max-width: 620px) { .recurring-details { grid-template-columns: 1fr; } .recurring-preview-row { flex-wrap: wrap; } }
 .button {
     display: inline-flex;
     align-items: center;

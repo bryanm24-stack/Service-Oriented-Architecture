@@ -14,6 +14,8 @@ const TokenBundle = require('./TokenBundle');
 const TokenPurchase = require('./TokenPurchase');
 const Wish = require('./Wish');
 const InstallmentSchedule = require('./InstallmentSchedule');
+const RecurringCost = require('./RecurringCost');
+const RecurringOccurrence = require('./RecurringOccurrence');
 
 const db = {
   AuthSession,
@@ -21,6 +23,8 @@ const db = {
   TokenPurchase,
   Wish,
   InstallmentSchedule,
+  RecurringCost,
+  RecurringOccurrence,
   User,
   Category,
   Transaction,
@@ -124,6 +128,14 @@ Wish.hasMany(InstallmentSchedule, { foreignKey: 'wish_id', as: 'installment_sche
 InstallmentSchedule.belongsTo(Wish, { foreignKey: 'wish_id', as: 'wish', onDelete: 'CASCADE' });
 InstallmentSchedule.belongsTo(Transaction, { foreignKey: 'transaction_id', as: 'transaction', onDelete: 'RESTRICT' });
 Wish.belongsTo(Transaction, { foreignKey: 'paid_transaction_id', as: 'paid_transaction', onDelete: 'RESTRICT' });
+
+User.hasMany(RecurringCost, { foreignKey: 'user_id', as: 'recurring_costs', onDelete: 'RESTRICT' });
+Category.hasMany(RecurringCost, { foreignKey: 'category_id', as: 'recurring_costs', onDelete: 'RESTRICT' });
+RecurringCost.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
+RecurringCost.belongsTo(Category, { foreignKey: 'category_id', as: 'category', onDelete: 'RESTRICT' });
+RecurringCost.hasMany(RecurringOccurrence, { foreignKey: 'recurring_cost_id', as: 'occurrences', onDelete: 'RESTRICT' });
+RecurringOccurrence.belongsTo(RecurringCost, { foreignKey: 'recurring_cost_id', as: 'recurring_cost', onDelete: 'RESTRICT' });
+RecurringOccurrence.belongsTo(Transaction, { foreignKey: 'transaction_id', as: 'transaction', onDelete: 'RESTRICT' });
 
 User.hasMany(AuthSession, { foreignKey: 'user_id', as: 'auth_sessions', onDelete: 'RESTRICT' });
 AuthSession.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });

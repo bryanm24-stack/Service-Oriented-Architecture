@@ -39,6 +39,9 @@
                 <a class="nav-link {{ request()->routeIs('wishes.*') ? 'active' : '' }}"
                     href="{{ route('wishes.index') }}"
                     @if (request()->routeIs('wishes.*')) aria-current="page" @endif><x-icon name="sparkle" />Wish / Cicilan</a>
+                <a class="nav-link {{ request()->routeIs('recurring.*') ? 'active' : '' }}"
+                    href="{{ route('recurring.index') }}"
+                    @if (request()->routeIs('recurring.*')) aria-current="page" @endif><x-icon name="sparkle" />Berulang</a>
                 <a class="nav-link {{ request()->routeIs('application') ? 'active' : '' }}"
                     href="{{ route('application') }}"
                     @if (request()->routeIs('application')) aria-current="page" @endif><x-icon name="phone" />Aplikasi</a>
@@ -68,6 +71,7 @@
                 <a href="{{ route('tokens.index') }}" @if(request()->routeIs('tokens.*')) aria-current="page" @endif>Paket token</a>
                 <a href="{{ route('token-purchases.index') }}" @if(request()->routeIs('token-purchases.*')) aria-current="page" @endif>Order saya</a>
                 <a href="{{ route('wishes.index') }}" @if(request()->routeIs('wishes.*')) aria-current="page" @endif>Wish / Cicilan</a>
+                <a href="{{ route('recurring.index') }}" @if(request()->routeIs('recurring.*')) aria-current="page" @endif>Berulang</a>
                 @if(session('soa.user.role') === 'admin')
                     <a href="{{ route('admin.bundles.index') }}" @if(request()->routeIs('admin.bundles.*')) aria-current="page" @endif>Kelola paket</a>
                     <a href="{{ route('admin.categories.index') }}" @if(request()->routeIs('admin.categories.*')) aria-current="page" @endif>Kelola kategori</a>

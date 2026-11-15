@@ -3,4 +3,5 @@ module.exports = {
   categoryRouter: require('./category'),
   transactionRouter: require('./transactionRoutes'),
   budgetRouter: require('./budget'),
+  recurringCostRouter: require('./recurringCost'),
 };

@@ -78,7 +78,6 @@ final class FinanceApi
         $this->request('DELETE', '/transactions/'.$id);
     }
 
-
     public function wishes(): array
     {
         return $this->request('GET', '/wishes')['data'];
@@ -127,5 +126,45 @@ final class FinanceApi
     public function budgetSummary(int $id, int $userId): array
     {
         return $this->request('GET', '/budgets/'.$id.'/summary')['data'];
+    }
+
+    public function recurringCosts(array $filters = []): array
+    {
+        return $this->request('GET', '/recurring-costs', $filters)['data'];
+    }
+
+    public function recurringCost(int $id): array
+    {
+        return $this->request('GET', '/recurring-costs/'.$id)['data'];
+    }
+
+    public function recurringPreview(array $values): array
+    {
+        return $this->request('POST', '/recurring-costs/preview', $values)['data'];
+    }
+
+    public function createRecurringCost(array $values): array
+    {
+        return $this->request('POST', '/recurring-costs', $values)['data'];
+    }
+
+    public function updateRecurringCost(int $id, array $values): array
+    {
+        return $this->request('PATCH', '/recurring-costs/'.$id, $values)['data'];
+    }
+
+    public function setRecurringStatus(int $id, string $status): void
+    {
+        $this->request('PATCH', '/recurring-costs/'.$id.'/status', ['status' => $status]);
+    }
+
+    public function archiveRecurringCost(int $id): void
+    {
+        $this->request('DELETE', '/recurring-costs/'.$id);
+    }
+
+    public function recurringOccurrences(int $id, string $status = 'upcoming'): array
+    {
+        return $this->request('GET', '/recurring-costs/'.$id.'/occurrences', ['status' => $status])['data'];
     }
 }

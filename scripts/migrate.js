@@ -68,8 +68,12 @@ const main = async () => {
       path.join(__dirname, '..', 'sql', 'migrations', '20261108_06_wishes.sql'), 'utf8',
     );
     await connection.query(wishMigration);
+    const recurringMigration = fs.readFileSync(
+      path.join(__dirname, '..', 'sql', 'migrations', '20261111_08_recurring_costs.sql'), 'utf8',
+    );
+    await connection.query(recurringMigration);
 
-    console.log('[migrate] Gabungan.sql + SOA-20261106-05 + SOA-20261108-06 selesai. Data lama tidak dikosongkan.');
+    console.log('[migrate] Gabungan.sql + SOA-20261106-05 + SOA-20261108-06 + SOA-20261111-08 selesai. Data lama tidak dikosongkan.');
   } finally {
     await connection.end();
   }
