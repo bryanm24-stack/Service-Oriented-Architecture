@@ -59,25 +59,35 @@ const main = async () => {
         'ALTER TABLE transactions ADD INDEX idx_transactions_owner_type_date (id_user,type,createdAt)',
       );
 
-    const tokenMigration = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'sql', 'migrations', '20261106_05_tokens.sql'), 'utf8',
-    );
-    await connection.query(tokenMigration);
+    const [purchaseStatus] = await connection.query("SHOW COLUMNS FROM token_purchases LIKE 'status'");
+    if (purchaseStatus.length > 0 && !String(purchaseStatus[0].Type).toLowerCase().includes("'needs_review'")) {
+      await connection.query(
+        "ALTER TABLE token_purchases MODIFY status ENUM('pending','paid','failed','cancelled','expired','needs_review') NOT NULL DEFAULT 'pending'",
+      );
+    }
 
-    const wishMigration = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'sql', 'migrations', '20261108_06_wishes.sql'), 'utf8',
+    const paymentColumns = [
+      ['provider_transaction_id', 'VARCHAR(255) NULL'],
+      ['provider_transaction_status', 'VARCHAR(32) NULL'],
+      ['provider_fraud_status', 'VARCHAR(32) NULL'],
+      ['provider_response', 'JSON NULL'],
+    ];
+    for (const [name, definition] of paymentColumns) {
+      const [columns] = await connection.query(`SHOW COLUMNS FROM token_purchases LIKE '${name}'`);
+      if (columns.length === 0) {
+        await connection.query(`ALTER TABLE token_purchases ADD COLUMN ${name} ${definition}`);
+      }
+    }
+    const [paymentIndexes] = await connection.query(
+      "SHOW INDEX FROM token_purchases WHERE Key_name = 'idx_token_purchase_provider_transaction'",
     );
-    await connection.query(wishMigration);
-    const recurringMigration = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'sql', 'migrations', '20261111_08_recurring_costs.sql'), 'utf8',
-    );
-    await connection.query(recurringMigration);
-    const paymentMigration = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'sql', 'migrations', '20261116_11_payments.sql'), 'utf8',
-    );
-    await connection.query(paymentMigration);
+    if (paymentIndexes.length === 0) {
+      await connection.query(
+        'ALTER TABLE token_purchases ADD INDEX idx_token_purchase_provider_transaction (provider_transaction_id)',
+      );
+    }
 
-    console.log('[migrate] Gabungan.sql + token + wishes + recurring + payments selesai. Data lama tidak dikosongkan.');
+    console.log('[migrate] Gabungan.sql selesai. Data lama tidak dikosongkan.');
   } finally {
     await connection.end();
   }

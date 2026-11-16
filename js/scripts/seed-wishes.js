@@ -42,6 +42,7 @@ const insertSchedules = async (connection, wishId, wish) => {
       index + 1,
       addMonths(today, index + 1),
       money(amount),
+      'planned',
     ];
   });
 

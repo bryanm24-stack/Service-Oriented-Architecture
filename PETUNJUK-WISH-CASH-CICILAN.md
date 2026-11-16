@@ -35,4 +35,4 @@ Buka aplikasi dan pilih menu **Wish / Cicilan**.
 - Wish menjadi `Paid` setelah seluruh jadwal dibayar.
 
 ## Pemeriksaan
-Periksa `docs/SOA-20261108-06.md` untuk aturan bisnis dan daftar endpoint. Migrasi tambahan bersifat additive; jangan menjalankan reset database.
+Periksa `docs/SOA-20261108-06.md` untuk aturan bisnis dan daftar endpoint. Skema berada di `sql/Gabungan.sql` dan bersifat additive; jangan menjalankan reset database.

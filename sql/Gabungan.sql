@@ -1,7 +1,7 @@
 -- DATABASE ASISTEN KEUANGAN
 -- Lima tabel keuangan: users, categories, transactions, budget, budget_categories.
 -- Merge menambahkan api_tiers, api_clients dan api_log; belum ada endpoint API key.
--- Wish cash/cicilan dipasang oleh runner scripts/migrate.js melalui migrasi tambahan SOA-20261108-06.
+-- Seluruh struktur aktif, termasuk token, wish, recurring, dan payment, berada di file ini.
 -- Tidak menyertakan tabel dan seed template buku, karakter, atau penulis.
 -- CREATE TABLE IF NOT EXISTS tidak mengubah struktur tabel yang sudah ada.
 -- Impor manual memakai asisten_keuangan; npm run db:migrate mengikuti DB_NAME.
@@ -183,6 +183,12 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
  INDEX idx_auth_session_user(user_id)
 ) ENGINE=InnoDB;
 
+-- ============================================================
+-- 3. TOKEN, WISH, RECURRING, DAN PAYMENT
+-- ============================================================
+
+-- SOA-20261106-05: additive only; no reset or automatic demo seeding.
+
 CREATE TABLE IF NOT EXISTS token_bundles (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -204,17 +210,22 @@ CREATE TABLE IF NOT EXISTS token_purchases (
   user_id INT NOT NULL,
   token_bundle_id INT UNSIGNED NOT NULL,
   idempotency_key VARCHAR(80) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  status ENUM('pending','paid','failed','cancelled','expired') NOT NULL DEFAULT 'pending',
+  status ENUM('pending','paid','failed','cancelled','expired','needs_review') NOT NULL DEFAULT 'pending',
   bundle_name_snapshot VARCHAR(100) NOT NULL,
   price_idr_snapshot DECIMAL(15,2) NOT NULL,
   token_quota_snapshot INT UNSIGNED NOT NULL,
   currency CHAR(3) NOT NULL DEFAULT 'IDR',
+  provider_transaction_id VARCHAR(255) NULL,
+  provider_transaction_status VARCHAR(32) NULL,
+  provider_fraud_status VARCHAR(32) NULL,
+  provider_response JSON NULL,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_token_purchase_order (order_id),
   UNIQUE KEY uq_token_purchase_owner_key (user_id, idempotency_key),
   INDEX idx_token_purchase_owner_date (user_id, createdAt),
   INDEX idx_token_purchase_bundle (token_bundle_id),
+  INDEX idx_token_purchase_provider_transaction (provider_transaction_id),
   CONSTRAINT fk_token_purchase_user FOREIGN KEY (user_id) REFERENCES users(id)
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_token_purchase_bundle FOREIGN KEY (token_bundle_id) REFERENCES token_bundles(id)
@@ -222,4 +233,108 @@ CREATE TABLE IF NOT EXISTS token_purchases (
   CONSTRAINT chk_purchase_quota CHECK (token_quota_snapshot BETWEEN 1 AND 2147483647),
   CONSTRAINT chk_purchase_price CHECK (price_idr_snapshot > 0),
   CONSTRAINT chk_purchase_currency CHECK (currency = 'IDR')
+) ENGINE=InnoDB;
+
+-- SOA-20261108-06: wish cash/cicilan dan jadwal pembayaran.
+CREATE TABLE IF NOT EXISTS wishes (
+  id_wish INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  name VARCHAR(180) NOT NULL,
+  price DECIMAL(15,2) NOT NULL,
+  payment_method ENUM('cash','installment') NOT NULL,
+  down_payment DECIMAL(15,2) NOT NULL DEFAULT 0,
+  tenor_months INT UNSIGNED NULL,
+  installment_amount DECIMAL(15,2) NULL,
+  status ENUM('planned','paid') NOT NULL DEFAULT 'planned',
+  paid_transaction_id INT UNSIGNED NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_wishes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_wishes_paid_transaction FOREIGN KEY (paid_transaction_id) REFERENCES transactions(id_transaction) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT chk_wishes_price CHECK (price > 0),
+  CONSTRAINT chk_wishes_down_payment CHECK (down_payment >= 0 AND down_payment <= price),
+  CONSTRAINT chk_wishes_tenor CHECK ((payment_method='cash' AND tenor_months IS NULL AND down_payment=0) OR (payment_method='installment' AND tenor_months BETWEEN 1 AND 120)),
+  INDEX idx_wishes_user_status (user_id, status, createdAt)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS installment_schedules (
+  id_installment INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  wish_id INT UNSIGNED NOT NULL,
+  period_number INT UNSIGNED NOT NULL,
+  due_date DATE NOT NULL,
+  amount_snapshot DECIMAL(15,2) NOT NULL,
+  status ENUM('planned','paid') NOT NULL DEFAULT 'planned',
+  transaction_id INT UNSIGNED NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_installment_wish FOREIGN KEY (wish_id) REFERENCES wishes(id_wish) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_installment_transaction FOREIGN KEY (transaction_id) REFERENCES transactions(id_transaction) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT chk_installment_amount CHECK (amount_snapshot > 0),
+  UNIQUE KEY uq_installment_period (wish_id, period_number),
+  INDEX idx_installment_due_status (wish_id, status, due_date)
+) ENGINE=InnoDB;
+
+-- SOA-20261111-08: recurring templates and immutable occurrence snapshots.
+CREATE TABLE IF NOT EXISTS recurring_costs (
+  id_recurring_cost INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  category_id INT UNSIGNED NOT NULL,
+  name VARCHAR(180) NOT NULL,
+  amount DECIMAL(15,2) NOT NULL,
+  `interval` ENUM('monthly','yearly') NOT NULL,
+  start_date DATE NOT NULL,
+  next_due_date DATE NOT NULL,
+  due_day TINYINT UNSIGNED NOT NULL,
+  status ENUM('active','paused') NOT NULL DEFAULT 'active',
+  end_date DATE NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deletedAt DATETIME NULL,
+  CONSTRAINT fk_recurring_cost_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_recurring_cost_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  INDEX idx_recurring_cost_owner_status (user_id, status, next_due_date)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS recurring_occurrences (
+  id_occurrence INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  recurring_cost_id INT UNSIGNED NOT NULL,
+  scheduled_for DATE NOT NULL,
+  due_date DATE NOT NULL,
+  amount_snapshot DECIMAL(15,2) NOT NULL,
+  status ENUM('planned','paid','locked') NOT NULL DEFAULT 'planned',
+  transaction_id INT UNSIGNED NULL,
+  locked_at DATETIME NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_recurring_occurrence_cost FOREIGN KEY (recurring_cost_id) REFERENCES recurring_costs(id_recurring_cost) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_recurring_occurrence_transaction FOREIGN KEY (transaction_id) REFERENCES transactions(id_transaction) ON DELETE RESTRICT ON UPDATE CASCADE,
+  UNIQUE KEY uq_recurring_occurrence_schedule (recurring_cost_id, scheduled_for),
+  INDEX idx_recurring_occurrence_status_date (recurring_cost_id, status, due_date)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS token_wallets (
+  user_id INT NOT NULL PRIMARY KEY,
+  balance BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_token_wallet_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT chk_token_wallet_balance CHECK (balance >= 0)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS token_ledgers (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token_purchase_id INT UNSIGNED NOT NULL,
+  amount BIGINT UNSIGNED NOT NULL,
+  balance_after BIGINT UNSIGNED NOT NULL,
+  reason VARCHAR(64) NOT NULL DEFAULT 'purchase',
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_token_ledger_purchase (token_purchase_id),
+  INDEX idx_token_ledger_user_date (user_id, createdAt),
+  CONSTRAINT fk_token_ledger_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_token_ledger_purchase FOREIGN KEY (token_purchase_id) REFERENCES token_purchases(id)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT chk_token_ledger_amount CHECK (amount > 0)
 ) ENGINE=InnoDB;
