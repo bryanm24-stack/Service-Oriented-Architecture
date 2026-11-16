@@ -10,7 +10,7 @@ Modul Wish menambahkan rencana pembelian cash/cicilan, simulasi harga, jadwal ci
 
 Katalog token, order pending dengan snapshot, idempotency key, halaman admin paket/kategori, dan kartu pengguna sudah ditambahkan. Checkout dan pemberian kuota belum aktif. Kontrak endpoint, pengujian, serta handoff Dana ada di [docs/SOA-20261106-05.md](docs/SOA-20261106-05.md).
 
-Upgrade: jalankan `npm ci`, `npm run db:migrate`, dan `composer install` pada `laravel-web`, kemudian `php artisan optimize:clear`. Untuk contoh harga pengembangan saja, jalankan `npm run db:seed:tokens`. Seed tidak otomatis dijalankan oleh migrasi dan tidak menimpa harga paket yang telah diedit.
+Upgrade: masuk ke folder `js/`, jalankan `npm ci`, `npm run db:migrate`, lalu masuk ke folder `laravel/` dan jalankan `composer install` serta `php artisan optimize:clear`. Untuk contoh data pengembangan saja, jalankan `npm run db:seed:tokens` dan `npm run db:seed:wishes` dari folder `js/`. Seed wishlist membuat 12 wish cash/cicilan beserta jadwal cicilan untuk user pertama; gunakan `$env:SEED_USER_EMAIL='email-anda'; npm run db:seed:wishes` di PowerShell untuk memilih user tertentu. Seed tidak otomatis dijalankan oleh migrasi dan aman diulang tanpa menggandakan data DEMO.
 
 Pengguna: `/app/token-bundles`, `/app/token-purchases`. Admin: `/app/admin/token-bundles`, `/app/admin/categories`. Daftarkan akun biasa dahulu, lalu jalankan `npm run user:admin -- email-admin@example.com` dari terminal backend untuk menetapkan admin yang dipercaya. Role dibaca ulang dari database pada setiap permintaan API; registrasi/form tidak menerima role.
 
@@ -21,9 +21,10 @@ Pengguna: `/app/token-bundles`, `/app/token-purchases`. Admin: `/app/admin/token
 Prasyarat: Node.js 24, PHP >=8.3, Composer dan MySQL/MariaDB aktif. Ekstensi PHP: curl, mbstring, fileinfo, openssl, xml/dom dan zip. Laravel menjadi HTTP gateway, sehingga tidak membutuhkan koneksi SQL terpisah. Jalankan di terminal yang sudah mengenali node, npm, php dan composer.
 
 1. Ekstrak ZIP ke folder baru. Cadangkan database lama sebelum upgrade. Jangan menimpa .env milik tim dengan contoh kosong.
-2. Buka terminal pada root Service-Oriented-Architecture:
+2. Buka terminal pada root Service-Oriented-Architecture, lalu masuk ke backend JavaScript:
 
 ```powershell
+cd js
 npm ci
 Copy-Item .env.example .env
 ```
@@ -50,7 +51,7 @@ npm start
 
 Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, auth_sessions, serta tabel token_bundles/token_purchases dan wishes/installment_schedules. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
 
-3. Terminal kedua, pada laravel-web:
+3. Terminal kedua, pada laravel:
 
 ```powershell
 composer install
@@ -125,9 +126,10 @@ npm run user:admin -- email-operator-anda
 Tidak ada password/admin default. User biasa tidak dapat menaikkan role lewat API. Operator dapat login lagi untuk memakai Postman dengan bearer JWT miliknya.
 
 ```powershell
+cd js
 npm test
 npm run test:mysql
-cd laravel-web
+cd ..\laravel
 php artisan test
 ```
 
