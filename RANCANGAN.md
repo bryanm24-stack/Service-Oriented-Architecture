@@ -36,7 +36,7 @@ Resource user lain 404. Owner create ordinary diisi dari req.user.id; id_user le
 
 ## ORM/raw dan ringkasan
 
-src/services/transactionQuery.js adalah satu sumber filter untuk ORM/raw/agregasi: owner, type, kategori, search LIKE, nominal, tanggal, sort whitelist, limit/offset. ORM memakai Op/include User/Category; raw memakai LEFT JOIN yang sama dan named replacements. Raw/ORM setara termasuk user soft-deleted, null catatan, decimal string, timestamps dan urutan tie-breaker ID.
+js/src/services/transactionQuery.js adalah satu sumber filter untuk ORM/raw/agregasi: owner, type, kategori, search LIKE, nominal, tanggal, sort whitelist, limit/offset. ORM memakai Op/include User/Category; raw memakai LEFT JOIN yang sama dan named replacements. Raw/ORM setara termasuk user soft-deleted, null catatan, decimal string, timestamps dan urutan tie-breaker ID.
 
 Tanggal bisnis Asia/Jakarta diubah menjadi rentang UTC [awal, sehari setelah tanggal akhir). Parameter tanggal raw berupa string UTC eksplisit agar tidak berubah menurut zona waktu proses Node. Database Sequelize menggunakan timezone +00:00. createdAt mengikuti pencatatan; migrasi tidak menggeser data historis.
 
@@ -52,7 +52,7 @@ Kurs ExchangeRate-API untuk estimasi konversi dan Midtrans untuk membaca status 
 
 ## Migrasi dan bukti
 
-scripts/migrate.js menjalankan CREATE IF NOT EXISTS tanpa reset, guarded users.role, guarded transactions.type dan indeks owner/type/createdAt. auth_sessions ditambah, tidak mengganti user. Uji nyata mempertahankan satu transaksi legacy dan menjalankan upgrade dua kali. Hasil pemeriksaan ada di docs/VERIFIKASI_ARUS_KAS.md.
+js/scripts/migrate.js menjalankan CREATE IF NOT EXISTS tanpa reset, guarded users.role, guarded transactions.type dan indeks owner/type/createdAt. auth_sessions ditambah, tidak mengganti user. Uji nyata mempertahankan satu transaksi legacy dan menjalankan upgrade dua kali. Hasil pemeriksaan ada di docs/VERIFIKASI_ARUS_KAS.md.
 
 Untuk bukti SQL N+1 gunakan npm run evidence:budget dengan BUDGET_EVIDENCE_TOKEN berisi JWT user uji yang mempunyai Budget beserta alokasi. Perekam memisahkan dua SELECT autentikasi yang tetap dari query bisnis; bukti bisnis menuntut satu JOIN, bukan query kategori per baris. Token tidak ditulis pada laporan.
 

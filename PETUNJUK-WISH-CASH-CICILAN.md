@@ -6,7 +6,7 @@ ZIP ini berisi **file proyek di dalam root repository** (tanpa folder pembungkus
 1. Buat backup folder proyek atau commit/stash perubahan pekerjaan yang belum disimpan.
 2. Di GitHub Desktop pilih `Repository > Show in Explorer`.
 3. Ekstrak ZIP ini langsung ke folder repository yang terbuka. Jika Windows meminta konfirmasi, pilih Replace/Overwrite.
-4. Jangan menghapus folder `.git`, file `.env`, `node_modules`, atau `laravel-web/vendor` milik proyek lokal. ZIP ini sengaja tidak membawa file-file tersebut.
+4. Jangan menghapus folder `.git`, file `.env`, `node_modules`, atau `laravel/vendor` milik proyek lokal. ZIP ini sengaja tidak membawa file-file tersebut.
 5. Kembali ke GitHub Desktop > Changes. File backend, migrasi, controller, route, dan Blade yang berubah seharusnya tampil sebagai local changes.
 
 ## Menjalankan pembaruan
@@ -19,7 +19,7 @@ npm run dev
 
 Laravel di terminal lain:
 ```bash
-cd laravel-web
+cd laravel
 composer install
 php artisan route:list --name=wishes
 php artisan serve

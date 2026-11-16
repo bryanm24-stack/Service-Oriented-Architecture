@@ -11,3 +11,5 @@ Status: 200 baca/update/login, 201 create + Location, 204 hapus transaksi/katego
 Format respons legacy dipertahankan per modul. Transaction list/detail `success,data,meta`; Budget `status,data`; Users objek/array; Categories `data`; auth `user,accessToken`. Laravel mengadaptasinya melalui satu FinanceApi/AuthApi.
 
 Rencana wallet/AI/wish/recurring/PDF/bank yang BELUM aktif dipertahankan pada [draft M1](legacy/M1-KONTRAK_API.md). Tiga model W8 belum otomatis menjadi middleware API key/rate limit.
+
+Pembelian token aktif memakai snapshot `token_purchases` dan `Idempotency-Key`. `POST /token-purchases` mengembalikan `201` + `Location` untuk order baru, sedangkan replay aman mengembalikan `200`; checkout Snap memakai order DB dan harga snapshot. `POST /payments/midtrans/notifications` tidak memakai JWT: signature SHA-512 Midtrans, order, currency, dan gross amount wajib cocok. Hanya settlement/capture dengan fraud yang diterima yang mengubah order menjadi paid dan menambah wallet dalam transaksi yang sama; ledger unik mencegah replay. Pending/expire/deny tidak mengkredit, dan refund/chargeback menjadi `needs_review` tanpa debit otomatis.
