@@ -14,7 +14,6 @@ const TokenBundle = require('./TokenBundle');
 const TokenPurchase = require('./TokenPurchase');
 const TokenWallet = require('./TokenWallet');
 const TokenLedger = require('./TokenLedger');
-const AIUsage = require('./AIUsage');
 const Wish = require('./Wish');
 const InstallmentSchedule = require('./InstallmentSchedule');
 const RecurringCost = require('./RecurringCost');
@@ -26,7 +25,6 @@ const db = {
   TokenPurchase,
   TokenWallet,
   TokenLedger,
-  AIUsage,
   Wish,
   InstallmentSchedule,
   RecurringCost,
@@ -153,9 +151,6 @@ TokenPurchase.belongsTo(TokenBundle, { foreignKey: 'token_bundle_id', as: 'bundl
 User.hasOne(TokenWallet, { foreignKey: 'user_id', as: 'token_wallet', onDelete: 'RESTRICT' });
 TokenWallet.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
 User.hasMany(TokenLedger, { foreignKey: 'user_id', as: 'token_ledgers', onDelete: 'RESTRICT' });
-User.hasMany(AIUsage, { foreignKey: 'user_id', as: 'ai_usages', onDelete: 'RESTRICT' });
-AIUsage.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
-TokenWallet.hasMany(TokenLedger, { foreignKey: 'user_id', sourceKey: 'user_id', as: 'ledger', constraints: false });
 TokenLedger.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
 TokenPurchase.hasOne(TokenLedger, { foreignKey: 'token_purchase_id', as: 'token_ledger', onDelete: 'RESTRICT' });
 TokenLedger.belongsTo(TokenPurchase, { foreignKey: 'token_purchase_id', as: 'purchase', onDelete: 'RESTRICT' });

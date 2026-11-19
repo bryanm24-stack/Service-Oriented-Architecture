@@ -20,7 +20,7 @@ final class AuthApi
             throw new ApiUnavailable('Konfigurasi koneksi API belum siap.');
         }
         try {
-            $client = Http::acceptJson()->asJson()->connectTimeout(3)->timeout(str_contains($path, '/ai/analyze') ? 40 : 10)->withoutRedirecting();
+            $client = Http::acceptJson()->asJson()->connectTimeout(3)->timeout(10)->withoutRedirecting();
             $client = $client->withHeaders($headers);
             if ($authenticated) {
                 $client = $client->withToken((string) Session::get('soa.access_token'));
@@ -31,11 +31,6 @@ final class AuthApi
 
             return $method === 'GET' ? $client->get($base.$path, $data) : $client->send($method, $base.$path, ['json' => $data === [] ? (object) [] : $data]);
         } catch (ConnectionException $error) {
-            if (str_contains($path, '/ai/analyze')) {
-                throw ValidationException::withMessages([
-                    '_api' => ['Koneksi analisis terputus dan hasil provider belum dapat dipastikan. Jangan kirim ulang otomatis; periksa halaman Kuota AI terlebih dahulu.'],
-                ]);
-            }
             throw new ApiUnavailable($method === 'GET' ? 'Layanan data belum dapat dihubungi. Coba lagi.' : 'Status penyimpanan belum dapat dipastikan. Periksa data sebelum mengulangi.', previous: $error);
         }
     }
@@ -63,7 +58,6 @@ final class AuthApi
         $response = $this->send('POST', '/auth/login', $values);
         $this->validateResponse($response);
         Session::regenerate();
-        Session::forget('soa.ai_api_key');
         $this->remember($response);
     }
 
@@ -135,7 +129,7 @@ final class AuthApi
         if ($response->successful()) {
             return;
         }
-        if (in_array($response->status(), [400, 401, 409, 422, 429], true)) {
+        if (in_array($response->status(), [400, 401, 409, 422], true)) {
             $errors = [];
             foreach ($response->json('errors', []) as $error) {
                 if (is_array($error)) {
@@ -143,14 +137,9 @@ final class AuthApi
                 }
             }
             if (! $errors) {
-                $errors['_api'][] = $response->json('msg') ?: ($response->status() === 409 ? 'Terjadi konflik data. Periksa kembali permintaan Anda.' : ($response->status() === 429 ? 'Batas permintaan tercapai. Tunggu sebelum mencoba lagi.' : ($response->status() === 401 ? 'Email atau password salah.' : 'Periksa seluruh isian Anda.')));
+                $errors['_api'][] = $response->status() === 409 ? 'Terjadi konflik data. Periksa kembali order atau isian Anda.' : ($response->status() === 401 ? 'Email atau password salah.' : 'Periksa seluruh isian Anda.');
             }
             throw ValidationException::withMessages($errors);
-        }
-        if (in_array($response->status(), [502, 503, 504], true)) {
-            throw ValidationException::withMessages([
-                '_api' => [$response->json('msg') ?: 'Layanan AI belum dapat memastikan hasil. Jangan kirim ulang otomatis; periksa riwayat kuota terlebih dahulu.'],
-            ]);
         }
         if ($response->status() === 403) {
             abort(403);

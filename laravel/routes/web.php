@@ -9,7 +9,6 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\TokenController;
-use App\Http\Controllers\AiController;
 use App\Http\Controllers\WishController;
 use App\Http\Controllers\RecurringCostController;
 use App\Http\Middleware\EnsureAdministrator;
@@ -50,9 +49,6 @@ Route::middleware(EnsureApiAuthenticated::class)->group(function () {
     Route::get('/kategori', CategoryController::class)->name('categories.index');
     Route::get('/aplikasi', AppController::class)->name('application');
     Route::get('/app/token-bundles', [TokenController::class, 'index'])->name('tokens.index');
-    Route::get('/app/token-wallet', [AiController::class, 'wallet'])->name('tokens.wallet');
-    Route::get('/app/ai-analysis', [AiController::class, 'analysis'])->name('ai.analysis');
-    Route::post('/app/ai-analysis', [AiController::class, 'analyze'])->middleware('throttle:8,1')->name('ai.analyze');
     Route::post('/app/token-bundles/{id}/new-order', [TokenController::class, 'newOrder'])->whereNumber('id')->name('tokens.new-order');
     Route::get('/app/token-purchases', [TokenController::class, 'purchases'])->name('token-purchases.index');
     Route::post('/app/token-purchases', [TokenController::class, 'store'])->name('token-purchases.store');

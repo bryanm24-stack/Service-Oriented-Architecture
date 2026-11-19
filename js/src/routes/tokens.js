@@ -20,7 +20,6 @@ router.route('/admin/token-bundles/:id').get(wrap(bundles.show)).put(wrap(bundle
 router.route('/token-purchases').get(wrap(purchases.list)).post(wrap(purchases.create))
   .all(methodNotAllowed('GET', 'POST'));
 router.route('/token-wallet').get(wrap(purchases.wallet)).all(methodNotAllowed('GET'));
-router.route('/token-ledger').get(wrap(purchases.ledger)).all(methodNotAllowed('GET'));
 router.route('/token-purchases/:orderId/checkout').get(wrap(purchases.inspectCheckout))
   .post(wrap(purchases.startCheckout)).all(methodNotAllowed('GET', 'POST'));
 router.route('/token-purchases/:orderId').get(wrap(purchases.show)).all(methodNotAllowed('GET'));

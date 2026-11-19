@@ -43,17 +43,3 @@ Total 39 method/path di /api/v1. GET / metadata tidak dihitung. Seluruh route ke
 | PUT | `/api/v1/budgets/:id` |
 | PATCH | `/api/v1/budgets/:id` |
 | DELETE | `/api/v1/budgets/:id` |
-
-## Wallet dan AI — SOA-20261118-09
-
-| Method | Path | Auth |
-|---|---|---|
-| GET | `/api/v1/token-wallet` | JWT |
-| GET | `/api/v1/token-ledger` | JWT |
-| POST | `/api/v1/ai/api-key` | JWT |
-| POST | `/api/v1/ai/analyze` | JWT + API key owner + Idempotency-Key |
-| GET | `/api/v1/ai/usages` | JWT + API key owner |
-| GET | `/api/v1/ai/usage-summary` | JWT + API key owner |
-| GET | `/api/v1/ai/wallet` | JWT + API key owner |
-| GET | `/api/v1/ai/ledger` | JWT + API key owner |
-| POST | `/api/v1/admin/ai/reconcile-expired` | JWT admin |

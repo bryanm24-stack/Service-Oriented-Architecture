@@ -6,12 +6,6 @@ Express + Sequelize + MySQL sebagai API; Laravel 13 + Blade sebagai web/PWA. Tid
 
 Modul Wish menambahkan rencana pembelian cash/cicilan, simulasi harga, jadwal cicilan dengan snapshot nominal/periode, dan pembayaran yang membuat transaksi pengeluaran beserta referensi transaksinya. Detail endpoint dan aturan bisnis ada di [docs/SOA-20261108-06.md](docs/SOA-20261108-06.md). Setelah menyalin pembaruan, jalankan `npm run db:migrate`; menu **Wish / Cicilan** tersedia di sidebar Laravel.
 
-## SOA-20261118-09 — wallet atomik dan analisis AI
-
-Milestone terbaru menambahkan saldo `available_tokens`/`reserved_tokens`, ledger audit kredit/debit/reservasi, AIUsage idempotent, reservasi row-lock, commit/release/grantPurchase atomik, API key AI terikat pemilik, W8 rate limit/log, adapter provider OpenAI-compatible, serta halaman **Kuota AI** dan **Analisis AI**. Detail kontrak, batasan, migrasi dan contoh uji ada di [docs/SOA-20261118-09.md](docs/SOA-20261118-09.md).
-
-Konfigurasi Node tambahan: `AI_PROVIDER_BASE_URL`, `AI_PROVIDER_API_KEY`, dan `AI_MODEL` pada `js/.env`. Provider key hanya disimpan di backend Node. Jalankan `npm run db:migrate` setelah upgrade.
-
 ## SOA-20261106-05 — paket dan order lokal
 
 Katalog token, order pending dengan snapshot, idempotency key, halaman admin paket/kategori, dan kartu pengguna sudah ditambahkan. Checkout dan pemberian kuota belum aktif. Kontrak endpoint, pengujian, serta handoff Dana ada di [docs/SOA-20261106-05.md](docs/SOA-20261106-05.md).
@@ -55,7 +49,7 @@ npm run db:migrate
 npm start
 ```
 
-Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, auth_sessions, token_bundles/token_purchases, wallet tersedia/ditahan, ledger AI, ai_usages, dan wishes/installment_schedules. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
+Migrasi mempertahankan tabel/data lama, menambah transactions.type dengan default expense, indeks owner/type/tanggal, users.role bila belum ada, auth_sessions, serta tabel token_bundles/token_purchases dan wishes/installment_schedules. Jalankan runner ini untuk upgrade, bukan hanya impor ulang Gabungan.sql: CREATE TABLE IF NOT EXISTS tidak menambah kolom pada tabel lama. Runner aman diulang; jangan menjalankan sync({force:true}), sync({alter:true}) atau reset database.
 
 3. Terminal kedua, pada laravel:
 
@@ -79,15 +73,15 @@ Jika tampilan terasa versi lama, bersihkan service worker/cache situs dari brows
 Browser → route/controller Laravel → AuthApi/FinanceApi → Express /api/v1 → middleware JWT/session/role → controller → Sequelize/MySQL.
 
 - Login/register/logout aktif. JWT disimpan pada session server Laravel; tidak ada access token di sessionStorage/localStorage. Refresh token HttpOnly berotasi dan hash token disimpan di auth_sessions. Logout mencabut sesi API; akun yang dihapus tidak dapat memakai token lama.
-- User biasa hanya mengakses datanya. Admin mendapat akses lintas akun pada resource sesuai matriks di RANCANGAN.md. Register tidak menerima role. API key AI W8 kini diperiksa kepemilikan setelah JWT; rate limit dan log request menggunakan api_tiers/api_clients/api_log.
+- User biasa hanya mengakses datanya. Admin mendapat akses lintas akun pada resource sesuai matriks di RANCANGAN.md. Register tidak menerima role. API key/tier/rate-limit W8 masih model dasar; tidak diklaim sebagai fitur middleware aktif pada milestone ini.
 - Transaction.type: income/expense. Create tanpa type mempertahankan kompatibilitas default expense. PUT wajib type, id_category, nominal dan catatan; PATCH menerima perubahan sebagian dan tidak boleh kosong. Owner tidak boleh dipindahkan melalui PUT/PATCH.
 - Nominal DECIMAL(15,2), nonnegatif; response berupa string dua desimal. Alokasi Budget tetap DECIMAL(10,2), positif. Tidak ada konversi nominal pembukuan melalui float.
 - ORM/raw memakai satu filter plan dan mengembalikan data/meta setara. Raw memakai named replacements. Urutan kolom/arah hanya whitelist; ID/query berbahaya ditolak.
 - Tanggal filter adalah tanggal bisnis Asia/Jakarta, inklusif tanggal akhir. Disimpan/dibandingkan dalam UTC. createdAt mengikuti waktu pencatatan; form belum mengubah tanggal transaksi historis. Data lama tidak digeser zona waktunya saat migrasi.
 - GET /transactions/summary dan /dashboard/summary memakai agregasi SQL yang sama. Seluruh filter data berlaku pada agregasi; limit/offset tidak membatasi total. Selisih diberi label arus kas tercatat, bukan saldo bank.
 - Budget–Category N:M tetap melalui budget_categories. Summary hanya menghitung expense pada kategori yang dialokasikan, periode Jakarta yang sama.
-- Dashboard awal: pemasukan, pengeluaran, selisih dan transaksi terbaru dari API. Kuota AI dan analisis AI tersedia melalui halaman khusus; ringkasan tidak dihitung dari pagination ledger.
-- Pembelian token tetap diverifikasi melalui webhook Midtrans. Wallet hanya dikreditkan oleh service grantPurchase setelah status pembayaran paid; endpoint publik tidak menerima mutasi saldo.
+- Dashboard awal: pemasukan, pengeluaran, selisih dan transaksi terbaru dari API. Dashboard lanjutan/grafik/kuota/tagihan tetap pekerjaan milestone Rafael.
+- Midtrans masih pembacaan status order dan kurs masih integrasi estimasi. Order token lokal kini tersedia; checkout Midtrans, wallet, AI, wish, recurring, PDF dan bank belum ditambahkan oleh milestone token.
 
 ## API dan Postman
 

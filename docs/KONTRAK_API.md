@@ -10,15 +10,6 @@ Status: 200 baca/update/login, 201 create + Location, 204 hapus transaksi/katego
 
 Format respons legacy dipertahankan per modul. Transaction list/detail `success,data,meta`; Budget `status,data`; Users objek/array; Categories `data`; auth `user,accessToken`. Laravel mengadaptasinya melalui satu FinanceApi/AuthApi.
 
-Wallet atomik dan AI usage aktif pada milestone [SOA-20261118-09](SOA-20261118-09.md). API key AI dimiliki user, disimpan sebagai hash, dan diperiksa setelah JWT; W8 rate limit/log berjalan melalui api_tiers/api_clients/api_log.
+Rencana wallet/AI/wish/recurring/PDF/bank yang BELUM aktif dipertahankan pada [draft M1](legacy/M1-KONTRAK_API.md). Tiga model W8 belum otomatis menjadi middleware API key/rate limit.
 
 Pembelian token aktif memakai snapshot `token_purchases` dan `Idempotency-Key`. `POST /token-purchases` mengembalikan `201` + `Location` untuk order baru, sedangkan replay aman mengembalikan `200`; checkout Snap memakai order DB dan harga snapshot. `POST /payments/midtrans/notifications` tidak memakai JWT: signature SHA-512 Midtrans, order, currency, dan gross amount wajib cocok. Hanya settlement/capture dengan fraud yang diterima yang mengubah order menjadi paid dan menambah wallet dalam transaksi yang sama; ledger unik mencegah replay. Pending/expire/deny tidak mengkredit, dan refund/chargeback menjadi `needs_review` tanpa debit otomatis.
-
-
-## Wallet dan AI (SOA-20261118-09)
-
-- `GET /token-wallet` mengembalikan `available_tokens`, `reserved_tokens`, `total_tokens` (serta alias `balance` untuk kompatibilitas). `GET /token-ledger` menerima `type`, `start_date`, `end_date`, `limit`, `offset`.
-- `POST /ai/api-key` (JWT) menerbitkan API key satu kali; database hanya menyimpan SHA-256. Jangan pernah mengirim provider key ke browser.
-- `POST /ai/analyze` membutuhkan JWT, `X-API-Key`, dan `Idempotency-Key`; body `question`, `period=YYYY-MM`, `answer_length=short|normal|detailed`. GET `/ai/usages`, `/ai/usage-summary?period=YYYY-MM`, `/ai/wallet`, `/ai/ledger` memerlukan JWT dan API key milik user yang sama.
-- Reservasi memakai prompt lengkap + output limit + margin 20%. Debit aktual MVP adalah `prompt_tokens + completion_tokens`; cached/thinking/tool metadata hanya transparansi. Replay completed mengembalikan jawaban lama.
-- `POST /admin/ai/reconcile-expired` khusus admin menandai reservasi kedaluwarsa pasca-dispatch untuk pemeriksaan dan hanya melepas reservasi yang belum dispatch.

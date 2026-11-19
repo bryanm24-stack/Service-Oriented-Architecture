@@ -138,7 +138,6 @@ CREATE TABLE IF NOT EXISTS api_clients (
   CONSTRAINT fk_api_clients_tier FOREIGN KEY (api_tier_id)
     REFERENCES api_tiers(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   UNIQUE KEY uq_user_api_tier_name (user_id, api_tier_id, name),
-  UNIQUE KEY uq_api_client_key_hash (key_hash),
   INDEX idx_api_clients_tier (api_tier_id)
 ) ENGINE=InnoDB;
 
@@ -316,67 +315,26 @@ CREATE TABLE IF NOT EXISTS recurring_occurrences (
 CREATE TABLE IF NOT EXISTS token_wallets (
   user_id INT NOT NULL PRIMARY KEY,
   balance BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  available_tokens BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  reserved_tokens BIGINT UNSIGNED NOT NULL DEFAULT 0,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_token_wallet_user FOREIGN KEY (user_id) REFERENCES users(id)
     ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT chk_token_wallet_balance CHECK (balance >= 0),
-  CONSTRAINT chk_token_wallet_available CHECK (available_tokens >= 0),
-  CONSTRAINT chk_token_wallet_reserved CHECK (reserved_tokens >= 0)
+  CONSTRAINT chk_token_wallet_balance CHECK (balance >= 0)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS token_ledgers (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  token_purchase_id INT UNSIGNED NULL,
-  event_key VARCHAR(120) NULL,
-  entry_type ENUM('credit','debit','reserve','release') NOT NULL DEFAULT 'credit',
-  status ENUM('completed','reserved','failed','needs_reconciliation') NOT NULL DEFAULT 'completed',
+  token_purchase_id INT UNSIGNED NOT NULL,
   amount BIGINT UNSIGNED NOT NULL,
-  available_after BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  reserved_after BIGINT UNSIGNED NOT NULL DEFAULT 0,
   balance_after BIGINT UNSIGNED NOT NULL,
   reason VARCHAR(64) NOT NULL DEFAULT 'purchase',
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_token_ledger_purchase (token_purchase_id),
-  UNIQUE KEY uq_token_ledger_event (event_key),
   INDEX idx_token_ledger_user_date (user_id, createdAt),
   CONSTRAINT fk_token_ledger_user FOREIGN KEY (user_id) REFERENCES users(id)
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_token_ledger_purchase FOREIGN KEY (token_purchase_id) REFERENCES token_purchases(id)
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT chk_token_ledger_amount CHECK (amount > 0)
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS ai_usages (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  idempotency_key VARCHAR(80) NOT NULL,
-  prompt_hash CHAR(64) NOT NULL,
-  provider VARCHAR(40) NULL,
-  model VARCHAR(120) NULL,
-  status ENUM('reserved','completed','failed','needs_reconciliation') NOT NULL DEFAULT 'reserved',
-  reserved_tokens INT UNSIGNED NOT NULL DEFAULT 0,
-  input_tokens INT UNSIGNED NULL,
-  output_tokens INT UNSIGNED NULL,
-  provider_total_tokens INT UNSIGNED NULL,
-  thinking_tokens INT UNSIGNED NULL,
-  cache_tokens INT UNSIGNED NULL,
-  tool_tokens INT UNSIGNED NULL,
-  actual_tokens INT UNSIGNED NULL,
-  response_text LONGTEXT NULL,
-  error_code VARCHAR(64) NULL,
-  dispatch_started_at DATETIME NULL,
-  reservation_expires_at DATETIME NOT NULL,
-  completed_at DATETIME NULL,
-  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_ai_usage_owner_idempotency (user_id, idempotency_key),
-  INDEX idx_ai_usage_owner_created (user_id, createdAt),
-  INDEX idx_ai_usage_status_expiry (status, reservation_expires_at),
-  CONSTRAINT fk_ai_usage_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT chk_ai_usage_tokens CHECK (reserved_tokens <= 2147483647)
 ) ENGINE=InnoDB;

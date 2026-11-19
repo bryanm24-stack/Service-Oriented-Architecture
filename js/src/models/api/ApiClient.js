@@ -25,7 +25,6 @@ const ApiClient = sequelize.define(
     key_hash: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
     },
     is_active: {
       type: DataTypes.BOOLEAN,

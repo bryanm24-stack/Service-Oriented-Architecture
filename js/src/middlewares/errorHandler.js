@@ -46,10 +46,9 @@ module.exports = (err, req, res, next) => {
     });
   }
 
-  if (err.expose === true && [400, 401, 403, 404, 409, 429, 502, 503, 504].includes(err.status)) {
+  if (err.expose === true && [400, 401, 403, 404, 409, 502, 503, 504].includes(err.status)) {
     return res.status(err.status).json({
       msg: err.message,
-      ...(typeof err.code === 'string' ? { code: err.code } : {}),
     });
   }
 

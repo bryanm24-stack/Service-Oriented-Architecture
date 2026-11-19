@@ -1,6 +1,5 @@
 const httpError = require('../utils/httpError');
-const { User, TokenPurchase, TokenLedger, sequelize } = require('../models');
-const tokenWallet = require('./tokenWallet');
+const { User, TokenPurchase, TokenWallet, TokenLedger, sequelize } = require('../models');
 const { findOwnedOrder, present } = require('./tokenPurchases');
 const { createSnapTransaction } = require('./midtrans');
 
@@ -71,8 +70,22 @@ const grantPaidPurchase = async (input) => {
     }, { transaction });
     if (!paid || refund || wasCredited) return { granted: false, purchase };
 
-    const grant = await tokenWallet.grantPurchase(purchase.id, transaction);
-    return { ...grant, purchase };
+    const [wallet] = await TokenWallet.findOrCreate({
+      where: { user_id: purchase.user_id },
+      defaults: { balance: 0 },
+      transaction,
+    });
+    await wallet.reload({ transaction, lock: transaction.LOCK.UPDATE });
+    const balance = BigInt(wallet.balance) + BigInt(purchase.token_quota_snapshot);
+    await wallet.update({ balance: balance.toString() }, { transaction });
+    const creditedLedger = await TokenLedger.create({
+      user_id: purchase.user_id,
+      token_purchase_id: purchase.id,
+      amount: purchase.token_quota_snapshot,
+      balance_after: balance.toString(),
+      reason: 'purchase',
+    }, { transaction });
+    return { granted: true, ledgerId: creditedLedger.id, balance: balance.toString(), purchase };
   });
 };
 
