@@ -1,7 +1,8 @@
-const { TokenPurchase, TokenWallet } = require('../models');
+const { TokenPurchase } = require('../models');
 const { parse } = require('../utils/validation/resourceSchemas');
 const schema = require('../utils/validation/tokenSchemas');
 const service = require('../services/tokenPurchases');
+const walletService = require('../services/tokenWallet');
 const checkout = require('../services/tokenCheckout');
 const { verifyNotificationSignature } = require('../services/midtrans');
 
@@ -25,12 +26,11 @@ const list = async (req, res) => {
   });
   res.json({ data: rows.map(service.present), meta: { total: count, limit, offset } });
 };
-const wallet = async (req, res) => {
-  const [row] = await TokenWallet.findOrCreate({
-    where: { user_id: req.user.id },
-    defaults: { balance: 0 },
-  });
-  res.json({ data: { balance: String(row.balance) } });
+const wallet = async (req, res) => res.json({ data: await walletService.walletSummary(req.user.id) });
+const ledger = async (req, res) => {
+  const { limit, offset, type, start_date, end_date } = parse(require('joi').object({ limit: require('joi').number().integer().min(1).max(50).default(10), offset: require('joi').number().integer().min(0).max(1000000).default(0), type: require('joi').string().valid('credit','debit','reserve','release'), start_date: require('joi').string().pattern(/^\d{4}-\d{2}-\d{2}$/), end_date: require('joi').string().pattern(/^\d{4}-\d{2}-\d{2}$/) }).unknown(false), req.query);
+  const { rows, count } = await walletService.ledgerList({ userId: req.user.id, limit, offset, type, startDate: start_date, endDate: end_date });
+  res.json({ data: rows, meta: { total: count, limit, offset } });
 };
 const input = (req) => {
   parse(schema.empty, req.query);
@@ -76,4 +76,4 @@ const notification = async (req, res) => {
   return res.json({ data: { accepted: true, granted: result.granted } });
 };
 
-module.exports = { create, list, wallet, show, inspectCheckout, startCheckout, notification };
+module.exports = { create, list, wallet, ledger, show, inspectCheckout, startCheckout, notification };

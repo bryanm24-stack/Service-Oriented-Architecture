@@ -77,4 +77,36 @@ final class TokenApi
     {
         return $this->request('GET', '/token-wallet')['data'];
     }
+
+    public function ledger(array $filters = []): array
+    {
+        return $this->request('GET', '/token-ledger', $filters);
+    }
+
+    public function usages(array $filters = [], ?string $apiKey = null): array
+    {
+        return $this->request('GET', '/ai/usages', $filters, $apiKey ? ['X-API-Key' => $apiKey] : []);
+    }
+
+    public function usageSummary(string $period, string $apiKey): array
+    {
+        return $this->request('GET', '/ai/usage-summary', ['period' => $period], ['X-API-Key' => $apiKey])['data'];
+    }
+
+    public function issueAiKey(): string
+    {
+        $data = $this->request('POST', '/ai/api-key', ['name' => 'ProjectSOA Laravel'])['data'];
+        if (! is_string($data['api_key'] ?? null)) {
+            throw new ApiUnavailable('Kunci akses AI tidak berhasil dibuat.');
+        }
+        return $data['api_key'];
+    }
+
+    public function analyze(array $values, string $apiKey, string $idempotencyKey): array
+    {
+        return $this->request('POST', '/ai/analyze', $values, [
+            'X-API-Key' => $apiKey,
+            'Idempotency-Key' => $idempotencyKey,
+        ])['data'];
+    }
 }
