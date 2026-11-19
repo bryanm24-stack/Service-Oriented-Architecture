@@ -22,6 +22,10 @@ app.post('/api/v1/payments/midtrans/notifications', require('./src/utils/asyncHa
   require('./src/controllers/tokenPurchases').notification,
 ));
 app.use('/api/v1', require('./src/middlewares/auth').verifyJWT);
+const aiController = require('./src/controllers/ai');
+app.post('/api/v1/ai/api-key', require('./src/utils/asyncHandler')(aiController.apiKey));
+app.post('/api/v1/admin/ai/reconcile-expired', require('./src/middlewares/auth').checkRoles(['admin']), require('./src/utils/asyncHandler')(aiController.reconcileExpired));
+app.use('/api/v1/ai', require('./src/middlewares/aiApiKey').verifyOwnedApiKey, require('./src/routes/ai'));
 app.use('/api/v1', routes.transactionRouter);
 app.use('/api/v1/users', routes.userRouter);
 app.use('/api/v1/categories', routes.categoryRouter);

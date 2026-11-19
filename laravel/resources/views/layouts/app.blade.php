@@ -45,8 +45,12 @@
                 <a class="nav-link {{ request()->routeIs('application') ? 'active' : '' }}"
                     href="{{ route('application') }}"
                     @if (request()->routeIs('application')) aria-current="page" @endif><x-icon name="phone" />Aplikasi</a>
-                <a class="nav-link {{ request()->routeIs('tokens.*', 'token-purchases.*') ? 'active' : '' }}" href="{{ route('tokens.index') }}"
-                    @if(request()->routeIs('tokens.*', 'token-purchases.*')) aria-current="page" @endif><x-icon name="sparkle" />Paket token</a>
+                <a class="nav-link {{ request()->routeIs('tokens.index', 'token-purchases.*') ? 'active' : '' }}" href="{{ route('tokens.index') }}"
+                    @if(request()->routeIs('tokens.index', 'token-purchases.*')) aria-current="page" @endif><x-icon name="sparkle" />Paket token</a>
+                <a class="nav-link {{ request()->routeIs('tokens.wallet') ? 'active' : '' }}" href="{{ route('tokens.wallet') }}"
+                    @if(request()->routeIs('tokens.wallet')) aria-current="page" @endif><x-icon name="wallet" />Kuota AI</a>
+                <a class="nav-link {{ request()->routeIs('ai.*') ? 'active' : '' }}" href="{{ route('ai.analysis') }}"
+                    @if(request()->routeIs('ai.*')) aria-current="page" @endif><x-icon name="sparkle" />Analisis AI</a>
                 @if(session('soa.user.role') === 'admin')
                     <p class="nav-label">Administrator</p>
                     <a class="nav-link {{ request()->routeIs('admin.bundles.*') ? 'active' : '' }}" href="{{ route('admin.bundles.index') }}">Kelola paket</a>
@@ -68,8 +72,10 @@
                 </div>
             </header>
             <nav class="mobile-catalog-nav" aria-label="Katalog dan pengelolaan">
-                <a href="{{ route('tokens.index') }}" @if(request()->routeIs('tokens.*')) aria-current="page" @endif>Paket token</a>
+                <a href="{{ route('tokens.index') }}" @if(request()->routeIs('tokens.index')) aria-current="page" @endif>Paket token</a>
                 <a href="{{ route('token-purchases.index') }}" @if(request()->routeIs('token-purchases.*')) aria-current="page" @endif>Order saya</a>
+                <a href="{{ route('tokens.wallet') }}" @if(request()->routeIs('tokens.wallet')) aria-current="page" @endif>Kuota AI</a>
+                <a href="{{ route('ai.analysis') }}" @if(request()->routeIs('ai.*')) aria-current="page" @endif>Analisis AI</a>
                 <a href="{{ route('wishes.index') }}" @if(request()->routeIs('wishes.*')) aria-current="page" @endif>Wish / Cicilan</a>
                 <a href="{{ route('recurring.index') }}" @if(request()->routeIs('recurring.*')) aria-current="page" @endif>Berulang</a>
                 @if(session('soa.user.role') === 'admin')

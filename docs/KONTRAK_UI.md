@@ -18,3 +18,13 @@ Nominal tabel rata kanan. Label Pemasukan/Pengeluaran selalu berupa teks. Seluru
 Kartu arus kas berbagi `partials/cash-flow`; daftar/tabel/kartu mobile berbagi `partials/expenses`. Ringkasan tidak dihitung dari halaman pagination. Dashboard lanjutan/grafik/kuota/tagihan tetap milestone Rafael; PIC menggunakan komponen bersama yang sudah tersedia. Wireframe React pada `frontend/` dan [draft lama](legacy/M1-KONTRAK_UI.md) adalah referensi historis.
 
 Alur paket token aktif: katalog menampilkan harga/kuota dari server, POST purchase memakai idempotency key, lalu halaman status membuka Snap sandbox. Return URL hanya kembali ke riwayat; status dan saldo selalu dibaca ulang dari API. Pending menampilkan proses verifikasi, bukan sukses, dan refresh/replay tidak menggandakan order atau kredit. Refund/chargeback ditampilkan sebagai perlu ditinjau. Wireframe React pada `frontend/` dan [draft lama](legacy/M1-KONTRAK_UI.md) adalah referensi historis.
+
+
+## SOA-20261118-09 — wallet dan analisis AI
+
+| Halaman | Data/perilaku |
+|---|---|
+| /app/token-wallet | Saldo tersedia/ditahan/total, rekap input-output aktual per bulan, ledger kredit/debit/reserve/release dengan filter dan pagination, status proses/selesai/perlu pemeriksaan |
+| /app/ai-analysis | Periode keuangan, pertanyaan, jawaban singkat/normal/rinci, konteks transaksi owner dari API, hasil AI aman sebagai teks ter-escape, token input/output aktual, saldo tersisa |
+
+Laravel menyimpan API key aplikasi per sesi server; provider key hanya berada di environment Node. UI tidak menyediakan input saldo manual atau provider key. Saldo nol mengarah ke katalog paket. Hasil ambigu tidak otomatis dikirim ulang dan reservasi tetap ditahan sampai pemeriksaan.
