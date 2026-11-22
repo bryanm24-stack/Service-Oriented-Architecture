@@ -4,7 +4,7 @@ const axios = require('axios');
 const { getUserPaymentStatus, getMidtransConfig } = require('../src/services/midtrans');
 const { installStore } = require('./support/finance-store');
 const db = require('../src/models');
-const app = require('../index');
+const app = require('./support/controller-app');
 
 // Synthetic adapter-only credential, never a real provider key.
 const sampleConfig = {
@@ -193,4 +193,36 @@ test('Midtrans: production memakai domain dan key environment yang sesuai', asyn
     }, async () => {
         assert.equal((await getUserPaymentStatus(1)).id_order, 'order-user-1');
     }, { MIDTRANS_ENVIRONMENT: 'production', MIDTRANS_SERVER_KEY: 'Mid-server-unit-test-only' });
+});
+
+test('Snap checkout uses app host for sandbox/production and preserves order snapshot', async () => {
+    const originalAdapter = axios.defaults.adapter;
+    const names = ['MIDTRANS_SERVER_KEY', 'MIDTRANS_ENVIRONMENT', 'MIDTRANS_FINISH_URL'];
+    const previous = names.map(name => process.env[name]);
+    const { createSnapTransaction, getProviderConfig } = require('../src/services/midtrans');
+    try {
+        for (const environment of ['sandbox', 'production']) {
+            process.env.MIDTRANS_ENVIRONMENT = environment;
+            process.env.MIDTRANS_SERVER_KEY = (environment === 'sandbox' ? 'SB-Mid-server-' : 'Mid-server-') + 'regression-test';
+            process.env.MIDTRANS_FINISH_URL = 'http://127.0.0.1:8000/app/token-purchases';
+            const host = environment === 'sandbox' ? 'https://app.sandbox.midtrans.com' : 'https://app.midtrans.com';
+            axios.defaults.adapter = async config => {
+                assert.equal(config.method, 'post');
+                assert.equal(config.url, host + '/snap/v1/transactions');
+                const payload = JSON.parse(config.data);
+                assert.equal(payload.transaction_details.order_id, 'SOA-test-order');
+                assert.equal(payload.transaction_details.gross_amount, 25000);
+                assert.equal(payload.callbacks.finish, process.env.MIDTRANS_FINISH_URL);
+                assert.equal(config.headers.Authorization, 'Basic ' + Buffer.from(process.env.MIDTRANS_SERVER_KEY + ':').toString('base64'));
+                return { status: 201, data: { token: 'test-snap-token', redirect_url: host + '/snap/v4/redirection/test-snap-token' }, config };
+            };
+            const checkout = await createSnapTransaction({ purchase: {order_id:'SOA-test-order',price_idr_snapshot:'25000.00',token_bundle_id:1,bundle_name_snapshot:'Paket uji'},user:{name:'Fixture',email:'fixture@example.com'} });
+            assert.equal(checkout.token, 'test-snap-token');
+            assert.equal(checkout.provider_transaction_status, 'pending');
+            assert.equal(getProviderConfig().baseUrl, environment === 'sandbox' ? 'https://api.sandbox.midtrans.com' : 'https://api.midtrans.com');
+        }
+    } finally {
+        axios.defaults.adapter = originalAdapter;
+        names.forEach((name, index) => previous[index] === undefined ? delete process.env[name] : process.env[name] = previous[index]);
+    }
 });

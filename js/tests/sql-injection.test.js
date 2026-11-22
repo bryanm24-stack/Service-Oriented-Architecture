@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Op, QueryTypes } = require('sequelize');
-const app = require('../index');
+const app = require('./support/controller-app');
 const db = require('../src/models');
 
 test('SQL injection: nama PATCH/apostrof tetap data, sort dan ID berbahaya ditolak', async () => {
@@ -9,7 +9,7 @@ test('SQL injection: nama PATCH/apostrof tetap data, sort dan ID berbahaya ditol
     let raw, userQuery;
     db.User.create = async values => ({ toJSON: () => ({ id: 1, ...values }) });
     db.User.findAll = async options => { userQuery = options; return []; };
-    db.sequelize.query = async (sql, options) => { raw = { sql, options }; return []; };
+    db.sequelize.query = async (sql, options) => { raw = { sql, options }; return sql.includes('COUNT(*)')?[{total:0}]:[]; };
     const server = app.listen(0, '127.0.0.1');
     await new Promise(resolve => server.once('listening', resolve));
     const base = `http://127.0.0.1:${server.address().port}/api/v1`;
@@ -27,10 +27,10 @@ test('SQL injection: nama PATCH/apostrof tetap data, sort dan ID berbahaya ditol
         const search = new URLSearchParams({ search: payload, mode: 'raw', sort: 'desc' });
         assert.equal((await fetch(base + '/transactions?' + search)).status, 200);
         assert(!raw.sql.includes(payload));
-        assert.match(raw.sql, /LIKE \$search/);
-        assert.match(raw.sql, /ORDER BY t.nominal DESC/);
-        assert.equal(raw.options.bind.search, `%${payload}%`);
-        assert.equal(raw.options.replacements, undefined);
+        assert.match(raw.sql, /LIKE :search/);
+        assert.match(raw.sql, /ORDER BY t.createdAt DESC/);
+        assert.equal(raw.options.replacements.search, `%${payload}%`);
+        assert.equal(raw.options.bind, undefined);
         assert.equal((await fetch(base + '/users?' + new URLSearchParams({ search: payload }))).status, 200);
         assert.equal(userQuery.where.name[Op.like], `%${payload}%`);
         for (const path of ['/transactions?sort=desc%3BDROP', '/users?sort=id%3BDROP', '/users/1%20OR%201%3D1']) {

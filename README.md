@@ -1,3 +1,11 @@
+## Perbaikan checkout Midtrans
+
+Host Snap sudah dipisahkan dari Core API. Ikuti [PANDUAN-MIDTRANS.md](PANDUAN-MIDTRANS.md) untuk Server Key sandbox dan webhook publik. Tes provider masih menggunakan mock; pembayaran end-to-end perlu kredensial lokal.
+
+# Pembaruan 22 November 2026 — Bank dan Tips Gratis
+
+Lihat [PANDUAN-BANK-TIPS.md](PANDUAN-BANK-TIPS.md). Menu baru `/app/bank` dan `/app/tips`. Bank memakai impor manual CSV/JSON; sandbox BCA belum terhubung. Tips gratis tidak memakai kuota AI. Jalankan migrasi setelah upgrade. ZIP distribusi tidak memuat .env atau dependencies; pertahankan .env lokal dan jalankan npm ci/composer install.
+
 # ProjectSOA — Katalog Token dan Order Lokal
 
 Express + Sequelize + MySQL sebagai API; Laravel 13 + Blade sebagai web/PWA. Tidak ada database user Laravel kedua. Register pada web memanggil POST /api/v1/auth/register; akun masuk ke tabel users pada database Node yang ditentukan DB_NAME dan dapat dilihat melalui SQLyog.

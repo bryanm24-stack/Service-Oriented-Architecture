@@ -24,6 +24,8 @@
                         name="wallet" /></span><span>ProjectSOA<small>Keuangan pribadi</small></span></a>
             <p class="nav-label">Ruang keuangan</p>
             <nav aria-label="Navigasi utama">
+<a class="nav-link" href="{{ route('bank.index') }}">Bank / Impor mutasi</a>
+<a class="nav-link" href="{{ route('recommendations.index') }}">Tips gratis</a>
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                     href="{{ route('dashboard') }}" @if (request()->routeIs('dashboard')) aria-current="page" @endif><x-icon
                         name="home" />Ringkasan</a>
@@ -72,6 +74,8 @@
                 </div>
             </header>
             <nav class="mobile-catalog-nav" aria-label="Katalog dan pengelolaan">
+<a href="{{ route('bank.index') }}">Bank / Impor</a>
+<a href="{{ route('recommendations.index') }}">Tips gratis</a>
                 <a href="{{ route('tokens.index') }}" @if(request()->routeIs('tokens.index')) aria-current="page" @endif>Paket token</a>
                 <a href="{{ route('token-purchases.index') }}" @if(request()->routeIs('token-purchases.*')) aria-current="page" @endif>Order saya</a>
                 <a href="{{ route('tokens.wallet') }}" @if(request()->routeIs('tokens.wallet')) aria-current="page" @endif>Kuota AI</a>

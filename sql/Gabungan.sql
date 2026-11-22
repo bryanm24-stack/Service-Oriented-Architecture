@@ -380,3 +380,30 @@ CREATE TABLE IF NOT EXISTS ai_usages (
   CONSTRAINT fk_ai_usage_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT chk_ai_usage_tokens CHECK (reserved_tokens <= 2147483647)
 ) ENGINE=InnoDB;
+
+
+-- Bank milestone 22 November 2026. Manual import only, no bank credentials stored.
+CREATE TABLE IF NOT EXISTS bank_connections (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL,
+ label VARCHAR(80) NOT NULL, account_last4 CHAR(4) NOT NULL,
+ mode VARCHAR(24) NOT NULL DEFAULT 'manual_import', status VARCHAR(24) NOT NULL DEFAULT 'ready_import',
+ createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ CONSTRAINT fk_bank_connection_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS bank_import_batches (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,user_id INT NOT NULL,connection_id INT UNSIGNED NOT NULL,category_id INT UNSIGNED NOT NULL,
+ is_synthetic BOOLEAN NOT NULL DEFAULT 0,status VARCHAR(20) NOT NULL DEFAULT 'preview',preview JSON NOT NULL,
+ createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ CONSTRAINT fk_bank_batch_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE RESTRICT,
+ CONSTRAINT fk_bank_batch_connection FOREIGN KEY(connection_id) REFERENCES bank_connections(id) ON DELETE RESTRICT,
+ CONSTRAINT fk_bank_batch_category FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS bank_import_items (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,batch_id INT UNSIGNED NOT NULL,connection_id INT UNSIGNED NOT NULL,
+ external_ref VARCHAR(100) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,transaction_id INT UNSIGNED NOT NULL,
+ createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_bank_external_ref(connection_id,external_ref),
+ CONSTRAINT fk_bank_item_batch FOREIGN KEY(batch_id) REFERENCES bank_import_batches(id) ON DELETE RESTRICT,
+ CONSTRAINT fk_bank_item_connection FOREIGN KEY(connection_id) REFERENCES bank_connections(id) ON DELETE RESTRICT,
+ CONSTRAINT fk_bank_item_transaction FOREIGN KEY(transaction_id) REFERENCES transactions(id_transaction) ON DELETE RESTRICT
+) ENGINE=InnoDB;

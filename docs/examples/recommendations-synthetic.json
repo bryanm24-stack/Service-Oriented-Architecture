@@ -1,0 +1,133 @@
+{
+  "label": "DATA SINTETIS, bukan data rekening",
+  "positive": {
+    "period": "2026-11",
+    "label": "Surplus proyeksi dari data tercatat; bukan saldo bank atau kas terverifikasi",
+    "free": true,
+    "uses_ai_tokens": false,
+    "data_incomplete": false,
+    "missing_inputs": [],
+    "optional_inputs": [],
+    "income": "5000000.00",
+    "expense": "2000000.00",
+    "unpaid_commitments": "1000000.00",
+    "projected_surplus": "2000000.00",
+    "commitments": [
+      {
+        "kind": "recurring",
+        "id": 1,
+        "name": "DATA SINTETIS tagihan",
+        "amount": "500000.00",
+        "due_date": "2026-11-25"
+      },
+      {
+        "kind": "installment",
+        "id": 2,
+        "name": "DATA SINTETIS cicilan",
+        "amount": "500000.00",
+        "due_date": "2026-11-26"
+      }
+    ],
+    "cards": [
+      {
+        "kind": "needs",
+        "priority": 1,
+        "amount": "1000000.00",
+        "due_date": "2026-11-25",
+        "reason": "2 kewajiban belum tercatat, total Rp1000000.00; sudah dikurangkan dalam proyeksi.",
+        "action": "commitments"
+      },
+      {
+        "kind": "liquidity",
+        "priority": 2,
+        "amount": "1500000.00",
+        "reason": "Dari surplus Rp2000000.00, prioritaskan sisa target cadangan Rp1500000.00.",
+        "action": "preferences"
+      },
+      {
+        "kind": "goal",
+        "priority": 3,
+        "amount": "500000.00",
+        "reason": "Sisa setelah cadangan Rp500000.00; target tabungan/modal Rp1000000.00.",
+        "action": "wishes"
+      },
+      {
+        "kind": "education",
+        "priority": 4,
+        "amount": null,
+        "reason": "Horizon 24 bulan; toleransi risiko low; sisa proyeksi Rp0.00. Pelajari diversifikasi, biaya dan kemungkinan kerugian sesuai horizon. Ini edukasi, tanpa janji return atau rekomendasi produk.",
+        "action": "preferences"
+      }
+    ]
+  },
+  "deficit": {
+    "period": "2026-11",
+    "label": "Surplus proyeksi dari data tercatat; bukan saldo bank atau kas terverifikasi",
+    "free": true,
+    "uses_ai_tokens": false,
+    "data_incomplete": false,
+    "missing_inputs": [],
+    "optional_inputs": [],
+    "income": "1000000.00",
+    "expense": "1200000.00",
+    "unpaid_commitments": "300000.00",
+    "projected_surplus": "-500000.00",
+    "commitments": [
+      {
+        "kind": "recurring",
+        "id": 1,
+        "name": "DATA SINTETIS tagihan",
+        "amount": "300000.00",
+        "due_date": "2026-11-25"
+      }
+    ],
+    "cards": [
+      {
+        "kind": "needs",
+        "priority": 1,
+        "amount": "300000.00",
+        "due_date": "2026-11-25",
+        "reason": "1 kewajiban belum tercatat, total Rp300000.00; sudah dikurangkan dalam proyeksi.",
+        "action": "commitments"
+      },
+      {
+        "kind": "needs",
+        "priority": 2,
+        "amount": "500000.00",
+        "reason": "Arus kas setelah komitmen -500000.00. Tinjau pengeluaran dan kewajiban sebelum mengalokasikan tabungan.",
+        "action": "transactions"
+      }
+    ]
+  },
+  "incomplete": {
+    "period": "2026-11",
+    "label": "Surplus proyeksi dari data tercatat; bukan saldo bank atau kas terverifikasi",
+    "free": true,
+    "uses_ai_tokens": false,
+    "data_incomplete": true,
+    "missing_inputs": [
+      "income_confirmed",
+      "commitments_confirmed"
+    ],
+    "optional_inputs": [
+      "reserve_target",
+      "goal_target",
+      "horizon_months",
+      "risk_profile"
+    ],
+    "income": "0.00",
+    "expense": "0.00",
+    "unpaid_commitments": "0.00",
+    "projected_surplus": "0.00",
+    "commitments": [],
+    "cards": [
+      {
+        "kind": "data",
+        "priority": 0,
+        "amount": null,
+        "reason": "Konfirmasikan kelengkapan pemasukan dan kewajiban. Angka nol belum membuktikan tidak ada kebutuhan.",
+        "action": "complete_data"
+      }
+    ]
+  }
+}

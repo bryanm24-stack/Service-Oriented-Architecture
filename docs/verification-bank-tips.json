@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-22",
+  "node": {
+    "tests": 50,
+    "pass": 46,
+    "fail": 0,
+    "skipped": 4
+  },
+  "javascript_syntax": {
+    "files": 116,
+    "failed": 0
+  },
+  "real_mysql": "not run: MySQL unavailable; guarded bank/tips suite included",
+  "php_and_browser": "not run: PHP unavailable",
+  "bca_authenticated_sandbox": "not available: team Client ID not verified",
+  "wallet_check": "production HTTP route with JWT + stub database: unchanged; no paid provider call",
+  "midtrans_snap": "Sandbox/production host regression passed with mocked provider; live credentials/webhook not tested"
+}

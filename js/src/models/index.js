@@ -159,6 +159,22 @@ TokenWallet.hasMany(TokenLedger, { foreignKey: 'user_id', sourceKey: 'user_id', 
 TokenLedger.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'RESTRICT' });
 TokenPurchase.hasOne(TokenLedger, { foreignKey: 'token_purchase_id', as: 'token_ledger', onDelete: 'RESTRICT' });
 TokenLedger.belongsTo(TokenPurchase, { foreignKey: 'token_purchase_id', as: 'purchase', onDelete: 'RESTRICT' });
+
+const BankConnection = require('./BankConnection');
+const BankImportBatch = require('./BankImportBatch');
+const BankImportItem = require('./BankImportItem');
+Object.assign(db,{BankConnection,BankImportBatch,BankImportItem});
+User.hasMany(BankConnection,{foreignKey:'user_id',as:'bank_connections',onDelete:'RESTRICT'});
+BankConnection.belongsTo(User,{foreignKey:'user_id',as:'user',onDelete:'RESTRICT'});
+User.hasMany(BankImportBatch,{foreignKey:'user_id',as:'bank_import_batches',onDelete:'RESTRICT'});
+BankConnection.hasMany(BankImportBatch,{foreignKey:'connection_id',as:'batches',onDelete:'RESTRICT'});
+BankImportBatch.belongsTo(BankConnection,{foreignKey:'connection_id',as:'connection',onDelete:'RESTRICT'});
+BankImportBatch.hasMany(BankImportItem,{foreignKey:'batch_id',as:'items',onDelete:'RESTRICT'});
+BankImportItem.belongsTo(BankImportBatch,{foreignKey:'batch_id',as:'batch',onDelete:'RESTRICT'});
+BankConnection.hasMany(BankImportItem,{foreignKey:'connection_id',as:'imported_items',onDelete:'RESTRICT'});
+BankImportItem.belongsTo(BankConnection,{foreignKey:'connection_id',as:'connection',onDelete:'RESTRICT'});
+BankImportItem.belongsTo(Transaction,{foreignKey:'transaction_id',as:'transaction',onDelete:'RESTRICT'});
+Transaction.hasOne(BankImportItem,{foreignKey:'transaction_id',as:'bank_import_item',onDelete:'RESTRICT'});
 db.sequelize = sequelize;
 
 module.exports = db;

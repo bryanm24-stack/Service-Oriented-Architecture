@@ -31,6 +31,8 @@ app.use('/api/v1/users', routes.userRouter);
 app.use('/api/v1/categories', routes.categoryRouter);
 app.use('/api/v1/budgets', routes.budgetRouter);
 app.use('/api/v1', require('./src/routes/tokens'));
+app.get('/api/v1/recommendations/free', require('./src/utils/asyncHandler')(require('./src/controllers/recommendations').free));
+app.use('/api/v1/bank', require('./src/routes/bank'));
 app.use('/api/v1/wishes', require('./src/routes/wish'));
 app.use('/api/v1/recurring-costs', routes.recurringCostRouter);
 

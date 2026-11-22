@@ -8,6 +8,12 @@ const hosts = {
   production: 'https://api.midtrans.com',
 };
 
+// Snap checkout uses app.*; Core status inquiry continues to use api.*.
+const snapHosts = {
+  sandbox: 'https://app.sandbox.midtrans.com',
+  production: 'https://app.midtrans.com',
+};
+
 const transactionStatuses = new Set([
   'authorize',
   'capture',
@@ -199,10 +205,10 @@ const getUserPaymentStatus = async (userId) => {
 };
 
 const createSnapTransaction = async ({ purchase, user }) => {
-  const { baseUrl, serverKey } = getProviderConfig();
+  const { environment, serverKey } = getProviderConfig();
   const response = await requestUpstream({
     method: 'POST',
-    url: `${baseUrl}/snap/v1/transactions`,
+    url: `${snapHosts[environment]}/snap/v1/transactions`,
     headers: {
       Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`,
       Accept: 'application/json',

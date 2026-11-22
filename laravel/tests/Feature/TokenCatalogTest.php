@@ -29,6 +29,7 @@ final class TokenCatalogTest extends TestCase
             '*/admin/token-bundles/1' => Http::response(['data' => $this->bundle]),
             '*/admin/token-bundles*' => Http::response(['data' => [$this->bundle], 'meta' => ['total' => 1]]),
             '*/token-bundles*' => Http::response(['data' => [$this->bundle], 'meta' => ['total' => 1]]),
+            '*/token-wallet' => Http::response(['data'=>['balance'=>'0','available_tokens'=>'0','reserved_tokens'=>'0','total_tokens'=>'0']]),
             '*/categories/1' => Http::response(['data' => ['id' => 1, 'name' => 'Food', 'icon' => 'food']]),
             '*/categories' => Http::response(['data' => [['id' => 1, 'name' => 'Food', 'icon' => 'food']]]),
         ]);
@@ -51,7 +52,7 @@ final class TokenCatalogTest extends TestCase
     {
         $this->signed()->get('/app/token-bundles')->assertOk()
             ->assertSee('Rp25.000,50')->assertSee('2.000')->assertSee('Beli paket')
-            ->assertSee('Pembayaran belum dibuka')->assertSee('pending')
+            ->assertSee('Pembayaran sandbox Midtrans')
             ->assertDontSee('/app/admin/', false)->assertDontSee('Kelola paket')
             ->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false);
         $this->assertNotEmpty(session('token_order_keys.1'));
@@ -146,7 +147,7 @@ final class TokenCatalogTest extends TestCase
             ->assertSee('Harga lama')->assertSee('Rp10.000,25')->assertSee('1.000')
             ->assertDontSee('Rp25.000,50')->assertSee('Pending')->assertSee('Status checkout');
         $this->get('/app/token-purchases/'.$this->orderId.'/checkout')->assertOk()
-            ->assertSee('Checkout belum tersedia')->assertSee('Bayar · belum tersedia')->assertSee('disabled', false);
+            ->assertSee('Checkout pembayaran')->assertSee('Order ini tidak lagi menunggu pembayaran');
         $this->get('/app/token-purchases')->assertOk()->assertSee('Harga lama')->assertSee('Rp10.000,25');
         Http::assertNotSent(fn ($r) => $r->method() !== 'GET');
     }

@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { Op } = require("sequelize");
-const app = require("../index");
+const app = require("./support/controller-app");
 const db = require("../src/models");
 
 test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
@@ -16,6 +16,7 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
         object[key] = value;
     };
 
+    replace(db.sequelize,"transaction",async callback=>callback({LOCK:{UPDATE:"UPDATE"}}));
     const users = new Map();
     const categories = new Map();
     const transactions = new Map();
@@ -136,10 +137,11 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
             options
         };
 
-        const q = options.bind;
+        const q = options.replacements;
+        if(sql.includes("COUNT(*)"))return [{total:transactions.size}];
 
         return [...transactions.values()].filter(row =>
-        (q.categoryId === undefined || row.id_category === q.categoryId) &&
+        (q.id_category === undefined || row.id_category === q.id_category) &&
         (q.search === undefined || (row.catatan || "").includes(q.search.slice(1,-1))) &&
         (q.minNominal === undefined || Number(row.nominal) >= Number(q.minNominal)) &&
         (q.maxNominal === undefined || Number(row.nominal) <= Number(q.maxNominal))
@@ -159,6 +161,9 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
         });
     });
 
+    replace(db.Transaction,"findOne",async options=>db.Transaction.findByPk(options.where.id_transaction,options));
+    replace(db.Transaction,"findAndCountAll",async options=>({rows:await db.Transaction.findAll(options),count:transactions.size}));
+    replace(db.RecurringCost,"count",async()=>0);
     const server = app.listen(0, "127.0.0.1");
 
     await new Promise(resolve => server.once("listening", resolve));
@@ -289,9 +294,9 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
         const query = "/api/v1/transactions?search=Makan&sort=desc&limit=10&offset=0&minNominal=10000&maxNominal=20000";
         const orm = await request("GET", query, 200);
 
-        assert.equal(lastOrm.where.nominal[Op.gte], 10000);
+        assert.equal(lastOrm.where.nominal[Op.gte], "10000");
 
-        assert.equal(lastOrm.where.nominal[Op.lte], 20000);
+        assert.equal(lastOrm.where.nominal[Op.lte], "20000");
 
         assert.equal(lastOrm.where.catatan[Op.like], "%Makan%");
 
@@ -301,11 +306,11 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
 
         assert.deepEqual(raw.body, orm.body);
 
-        assert(lastRaw.sql.includes("c.id = t.id_category"));
+        assert(lastRaw.sql.includes("c.id=t.id_category"));
 
         assert(lastRaw.sql.includes("u.deletedAt IS NULL"));
 
-        assert.equal(lastRaw.options.bind.search, "%Makan%");
+        assert.equal(lastRaw.options.replacements.search, "%Makan%");
 
         assert.equal(orm.body.data[0].user.password, undefined);
 
@@ -362,7 +367,7 @@ test("Users, Categories dan Transactions terhubung melalui HTTP", async () => {
             ["POST", "/api/v1/categories/1", "GET, PUT, PATCH, DELETE"],
         ]) assert.equal((await request(method, url, 405)).headers.get("allow"), allow);
 
-        await request("DELETE", "/api/v1/transactions/1", 200);
+        await request("DELETE", "/api/v1/transactions/1", 204);
 
         await request("DELETE", "/api/v1/transactions/1", 404);
 
@@ -413,7 +418,7 @@ test("Model, relasi, skema SQL dan kontrak validasi konsisten", async () => {
 
     const sql = fs.readFileSync(path.join(__dirname, "..", "..", "sql", "Gabungan.sql"), "utf8");
 
-    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, 8);
+    assert.equal((sql.match(/^CREATE TABLE IF NOT EXISTS/gm) || []).length, Object.keys(db.sequelize.models).length);
 
     assert.match(sql, /id_category INT UNSIGNED NOT NULL/);
 

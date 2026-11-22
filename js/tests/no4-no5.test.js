@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const axios = require('axios');
-const app = require('../index');
+const app = require('./support/controller-app');
 const db = require('../src/models');
 const { requestUpstream } = require('../src/services/upstream');
 const { hashPassword } = require('../src/utils/password');
@@ -11,7 +11,7 @@ const { scryptSync } = require('node:crypto');
 // Tidak menggunakan kredensial asli atau memanggil provider sungguhan.
 test('No. 4–5: kontrak gabungan DB/API, validasi, dan kegagalan upstream', async () => {
     const originalAdapter = axios.defaults.adapter;
-    const originalFind = db.Transaction.findByPk;
+    const originalFind = db.Transaction.findOne;
     const originalEnv = Object.fromEntries(['EXCHANGE_RATE_API_KEY', 'API_TIMEOUT_MS'].map(key => [key, process.env[key]]));
 
     process.env.EXCHANGE_RATE_API_KEY = 'FAKE_TEST_KEY';
@@ -23,7 +23,7 @@ test('No. 4–5: kontrak gabungan DB/API, validasi, dan kegagalan upstream', asy
     let calls = 0;
     let lastConfig;
 
-    db.Transaction.findByPk = async id => Number(id) === 999 ? null : {
+    db.Transaction.findOne = async ({where:{id_transaction:id}}) => Number(id) === 999 ? null : {
         toJSON: () => ({
             id_transaction: Number(id),
             id_user: 1,
@@ -179,7 +179,7 @@ test('No. 4–5: kontrak gabungan DB/API, validasi, dan kegagalan upstream', asy
     } finally {
         axios.defaults.adapter = originalAdapter;
 
-        db.Transaction.findByPk = originalFind;
+        db.Transaction.findOne = originalFind;
 
         for (const [key, value] of Object.entries(originalEnv)) {
             if (value === undefined) {

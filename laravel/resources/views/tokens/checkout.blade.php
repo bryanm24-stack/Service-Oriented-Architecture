@@ -3,7 +3,7 @@
 @section('content')
 <section class="panel checkout-panel">
     <span class="empty-icon"><x-icon name="shield" /></span>
-    <p class="eyebrow">Pembelian token</p><h1>Checkout belum tersedia</h1>
+    <p class="eyebrow">Pembelian token</p><h1>Checkout pembayaran</h1>
     <p class="muted">Selesaikan pembayaran sandbox. Saldo hanya berubah setelah webhook terverifikasi.</p>
     <div class="checkout-recap"><strong>{{ $checkout['purchase']['bundle_name_snapshot'] }}</strong>
         <p>{{ number_format($checkout['purchase']['token_quota_snapshot'], 0, ',', '.') }} token · {{ \App\Support\Money::rupiah(\App\Support\Money::cents($checkout['purchase']['price_idr_snapshot'])) }}</p>

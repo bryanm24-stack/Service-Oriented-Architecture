@@ -1,60 +1,44 @@
-> Update SOA-20261106-05: TokenBundle/TokenPurchase dan UI katalog/order lokal sudah diimplementasikan. Kontrak terkini ada di [docs/SOA-20261106-05.md](docs/SOA-20261106-05.md). Pembayaran, wallet/ledger, tier dan subscription belum diaktifkan.
+# Rancangan Asisten Keuangan — pembaruan 22 November 2026
 
-# Rancangan Asisten Keuangan — milestone arus kas
+## Arsitektur dan aturan lintas modul
 
-## Domain dan consumer
+Browser → Laravel 13 Blade/PWA → Express /api/v1 → Sequelize → MySQL. Satu database bisnis pada Node. Identitas owner dari JWT + AuthSession aktif; role efektif dibaca ulang dari database. Register selalu user, password scrypt. Laravel menyimpan access/refresh token pada session server. Admin tidak mengubah owner resource melalui PATCH/PUT. Data pemilik lain 404. Joi whitelist, raw parameter terpisah, error pusat tanpa kredensial/SQL.
 
-Mengelola akun, kategori bersama, pemasukan/pengeluaran, anggaran bulanan dan arus kas tercatat. Consumer pertama adalah web/PWA Laravel; consumer kedua adalah aplikasi/API client seperti Postman. Keduanya memakai backend REST Express dan satu database MySQL melalui Sequelize. Provider kurs/Midtrans hanya melengkapi data lokal, tidak menggantikan pencatatan dan aturan bisnis service.
+Transaksi income/expense, DECIMAL(15,2), operasi uang integer sen. ORM/raw/agregasi memakai filter bersama; periode bisnis Asia/Jakarta disimpan UTC. Dashboard adalah arus kas tercatat, bukan saldo bank. Budget–Category N:M melalui allocated_amount; pemakaian hanya expense. User dan TokenBundle soft delete; histori finansial dipertahankan. Migrasi additive tanpa reset data.
 
-## Entitas dan relasi
+## Entitas saat ini
 
-User hasMany Transaction melalui id_user; Transaction belongsTo User dan Category. Category hasMany Transaction. User hasMany Budget melalui user_id. Budget belongsToMany Category dan Category belongsToMany Budget melalui BudgetCategory dengan allocated_amount. User hasMany ApiClient dan AuthSession; ApiClient belongsTo ApiTier dan hasMany ApiLog. Ada sembilan tabel: users, categories, transactions, budget, budget_categories, api_clients, api_tiers, api_log, auth_sessions.
+21 model: User, Category, Transaction, Budget, BudgetCategory, ApiClient, ApiTier, ApiLog, AuthSession, TokenBundle, TokenPurchase, TokenWallet, TokenLedger, AIUsage, Wish, InstallmentSchedule, RecurringCost, RecurringOccurrence, BankConnection, BankImportBatch, BankImportItem.
+User memiliki transactions/budgets/wishes/recurring_costs/auth_sessions/api_clients/token_purchases/ai_usages/bank_connections/bank_import_batches dan satu TokenWallet. BankConnection memiliki batches/imported_items, Batch memiliki items, Item belongsTo Transaction. Semua hubungan database ditetapkan di js/src/models/index.js dan sql/Gabungan.sql.
 
-Transaction.type ENUM(income,expense), default expense; nominal DECIMAL(15,2) >=0. BudgetCategory.allocated_amount DECIMAL(10,2) >0. Unique user/bulan/tahun dan budget/kategori tetap ada. Semua transaksi lama mendapatkan type expense tanpa perubahan ID, nominal, catatan, timestamp atau owner.
+## Status fitur dan batas
 
-User memakai paranoid:true, scope default tanpa password dan withPassword khusus verifikasi; User.profile_info dan Budget.keterangan virtual getter; Category.name setter merapikan spasi serta formatted_name virtual getter. Password di-hash scrypt melalui util bersama, baik register maupun User CRUD.
+CRUD transaksi/kategori/user/Budget dan agregasi aktif; katalog/order snapshot, Midtrans webhook, wallet ledger atomik dan analisis AI telah diimplementasikan pada milestone sebelumnya. Wish pembayaran mencatat expense; recurring masih template/occurrence, belum mesin transaksi otomatis. Tips gratis tidak menggunakan provider atau wallet. Bank memakai impor manual, belum API rekening nyata. PDF belum diimplementasikan.
 
-## REST, validasi dan akses
+## Keputusan bank: IMPOR MANUAL, bukan sandbox tim yang sudah tersedia
 
-30 endpoint bisnis lama tetap dipasang dan ditambah dua endpoint agregasi serta tujuh route auth termasuk alias: total 39 method/path di /api/v1. GET / metadata tidak termasuk. PUT lengkap, PATCH sebagian nonkosong, parameter/unknown fields divalidasi Joi, 201+Location untuk create, 204 untuk delete transaksi/kategori/Budget/logout; User tetap soft-delete 200. Error pusat menangani 400/401/403/404/409/502/503/504 tanpa SQL/kredensial.
+Diputuskan 22 November 2026. Bukti: Client ID tim belum muncul menurut pengguna; tidak ada token dan respons sandbox terautentikasi yang dapat diperiksa. Portal publik resmi tersedia tetapi tidak membuktikan akses tim. Spike akses dibatasi dua jam; fallback dipilih sekarang. Demo dan target selesai 25 November tidak bergantung pada persetujuan bank.
 
-| Resource | User biasa | Admin | Tamu |
-|---|---|---|---|
-| /auth/register, /auth/login | Publik; role register selalu user | Publik; role tidak dari body | Publik |
-| /auth/me, /auth/logout | Sesi sendiri | Sesi sendiri | 401 |
-| /users GET dan POST | 403 | Daftar/create user | 401 |
-| /users/:id GET/PUT/PATCH/DELETE | Akun sendiri | Lintas akun | 401 |
-| /users/:id/transactions, budgets, subscription-status | Data sendiri | Lintas akun | 401 |
-| /categories GET/detail | Baca bersama | Baca bersama | 401 |
-| /categories POST/PUT/PATCH/DELETE | 403 | Kelola kategori | 401 |
-| /categories/:id/transactions | Hanya transaksi sendiri | Lintas akun | 401 |
-| /transactions CRUD/conversion | Hanya milik sendiri | Lintas akun | 401 |
-| /budgets CRUD/summary | Hanya milik sendiri | Lintas akun | 401 |
-| /transactions/summary, /dashboard/summary | Hanya agregasi sendiri | Lintas akun/target user_id | 401 |
+Sumber resmi, kebutuhan kredensial/otorisasi, kontrak data, batas yang perlu dikonfirmasi, adapter, relasi dan seluruh kriteria penerimaan ada di [docs/SOA-20261122-BANK-TIPS.md](docs/SOA-20261122-BANK-TIPS.md). Dokumentasi BCA: https://developer.bca.co.id/id/Dokumentasi dan https://developer.bca.co.id/id/Sandbox ; biaya dikonfirmasi melalui https://webform.bca.co.id/api/registrasi-api . Tidak ada biaya atau kredensial yang dikarang. Tidak memakai scraper/login bank atau transfer.
 
-Resource user lain 404. Owner create ordinary diisi dari req.user.id; id_user legacy yang sama masih diterima, ID berbeda 403. PUT tidak memindahkan owner; PATCH owner ditolak 400. Admin tidak mendapatkan bypass selain resource pada matriks. Role pada request create/update user tidak diterima. JWT HS256 diverifikasi secret/issuer/audience/expiry, user aktif dan sesi DB; role efektif dibaca kembali dari database. Refresh token random disimpan sebagai hash, berotasi dengan transaksi+lock; logout mencabut sesi.
+BankConnection hanya alias/last4, mode manual_import/status ready_import. Batch preview terkait owner/kategori. Item unique connection+external_ref terkait Transaction; konfirmasi atomik dengan lock, replay tidak menggandakan transaksi. CSV/JSON canonical debit→expense, kredit→income. Data sintetis berlabel hanya preview; saldo verified selalu false dan amount null. UI /app/bank menyatakan sandbox belum terhubung. Rencana adapter getBalance/getStatements mempertahankan field service saat provider resmi ditambahkan.
 
-## ORM/raw dan ringkasan
+## Keputusan tips gratis
 
-js/src/services/transactionQuery.js adalah satu sumber filter untuk ORM/raw/agregasi: owner, type, kategori, search LIKE, nominal, tanggal, sort whitelist, limit/offset. ORM memakai Op/include User/Category; raw memakai LEFT JOIN yang sama dan named replacements. Raw/ORM setara termasuk user soft-deleted, null catatan, decimal string, timestamps dan urutan tie-breaker ID.
+GET /api/v1/recommendations/free wajib JWT; whitelist periode, konfirmasi data dan preferensi. Tiga query bisnis dengan agregasi/JOIN owner; tidak N+1. Proyeksi income−expense−komitmen tanpa referensi Transaction; tunggakan sampai akhir periode termasuk. Angka ini bukan saldo bank/kas terverifikasi. Tanpa konfirmasi pemasukan/komitmen, data_incomplete dan petunjuk input muncul. Prioritas kebutuhan, cadangan likuid, tujuan/modal, lalu edukasi sesuai horizon/risiko; tidak menjanjikan return atau produk spesifik. Tidak memanggil provider atau mendebit TokenWallet. UI /app/tips mengambil alasan dan nominal dari API.
 
-Tanggal bisnis Asia/Jakarta diubah menjadi rentang UTC [awal, sehari setelah tanggal akhir). Parameter tanggal raw berupa string UTC eksplisit agar tidak berubah menurut zona waktu proses Node. Database Sequelize menggunakan timezone +00:00. createdAt mengikuti pencatatan; migrasi tidak menggeser data historis.
+## Kriteria selesai untuk 25 November 2026
 
-GET /transactions/summary dan /dashboard/summary memakai agregasi SQL SUM(CASE...) dan COUNT, bukan jumlah satu halaman. Respons income, expense, difference dan total_transactions; berlabel Arus kas tercatat. Budget summary memakai satu JOIN alokasi dan satu agregasi semua kategori expense dalam periode Jakarta; income tidak menambah total_spent. Selisih bukan saldo bank.
+1. Demo dua akun, mode/sumber/status akses jelas; data akun lain tidak terbaca.
+2. CSV/JSON valid menghasilkan preview setara; tanggal/referensi/debit-kredit/nominal/error terlihat, rekening tersamarkan.
+3. Invalid/sintetis tidak dicatat; konfirmasi/referensi berulang tidak menggandakan transaksi; kegagalan item me-rollback transaksi.
+4. Contoh tips positif, defisit dan data tidak lengkap cocok rumus; komitmen yang sudah punya Transaction tidak dihitung ulang.
+5. Saldo token sebelum/sesudah tips sama, tanpa panggilan provider AI; halaman/navigasi browser berfungsi setelah migrasi.
+6. npm test lolos; jalankan suite MySQL terisolasi dan Laravel di environment yang menyediakan runtime tersebut, serta dokumentasikan hasil aktual.
 
-## Arsitektur dan frontend
+## Dokumen implementasi
 
-Browser → Laravel controller → AuthApi/FinanceApi → Express router → verifyJWT/checkRoles → controller → Sequelize/MySQL. Laravel tidak membuat tabel users sendiri. CurrentUserContext diisi dari session yang diverifikasi /auth/me. Seluruh filter/list/summary datang dari API, bukan data demo atau total halaman lokal. Dashboard awal dan halaman transaksi memakai partial kartu arus kas dan daftar bersama. CSP self, CSRF form, HTML escaping Blade, aset lokal, token tetap server-side. Service worker hanya menyimpan static shell, tidak HTML/API/token/keuangan.
-
-## Integrasi dan status lingkup
-
-Kurs ExchangeRate-API untuk estimasi konversi dan Midtrans untuk membaca status order sudah dipertahankan. Provider salah/tidak dikonfigurasi menghasilkan 502/503/504 terkontrol; ini bukan bukti provider asli berhasil. Checkout/token AI/wallet/wish/recurring/PDF/bank tetap rencana lanjutan. Model W8 ada, middleware API key/rate-limit belum diklaim aktif.
-
-## Migrasi dan bukti
-
-js/scripts/migrate.js menjalankan CREATE IF NOT EXISTS tanpa reset, guarded users.role, guarded transactions.type dan indeks owner/type/createdAt. auth_sessions ditambah, tidak mengganti user. Uji nyata mempertahankan satu transaksi legacy dan menjalankan upgrade dua kali. Hasil pemeriksaan ada di docs/VERIFIKASI_ARUS_KAS.md.
-
-Untuk bukti SQL N+1 gunakan npm run evidence:budget dengan BUDGET_EVIDENCE_TOKEN berisi JWT user uji yang mempunyai Budget beserta alokasi. Perekam memisahkan dua SELECT autentikasi yang tetap dari query bisnis; bukti bisnis menuntut satu JOIN, bukan query kategori per baris. Token tidak ditulis pada laporan.
+[Bank dan tips](docs/SOA-20261122-BANK-TIPS.md), [panduan demo](PANDUAN-BANK-TIPS.md), [wallet/AI](docs/SOA-20261118-09.md), [Wish](docs/SOA-20261108-06.md), [recurring](docs/SOA-20261111-08.md). Dokumen bertanggal lama menjelaskan milestone saat itu; status terkini mengikuti dokumen ini dan kode.
 
 <!-- MULAI BUKTI SQL BUDGET OTOMATIS -->
 ## Bukti aktual SQL Budget: pemeriksaan N+1

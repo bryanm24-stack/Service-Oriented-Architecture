@@ -65,24 +65,4 @@
             <div class="aside-tip"><x-icon name="info" /><p>Saat tombol Bayar digunakan, aplikasi membuat transaksi pengeluaran dan menyimpan ID transaksi sebagai referensi pembayaran.</p></div>
         </aside>
     </div>
-    <script>
-        (() => {
-            const method = document.getElementById('payment_method');
-            const fields = document.getElementById('installment-fields');
-            const down = document.getElementById('down_payment');
-            const tenor = document.getElementById('tenor_value');
-            const type = document.getElementById('tenor_type');
-            const sync = () => {
-                const installment = method.value === 'installment';
-                fields.hidden = !installment;
-                down.required = installment;
-                tenor.required = installment;
-                down.disabled = !installment;
-                tenor.disabled = !installment;
-                type.disabled = !installment;
-            };
-            method.addEventListener('change', sync);
-            sync();
-        })();
-    </script>
 @endsection

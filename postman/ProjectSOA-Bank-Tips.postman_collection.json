@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "Bank manual dan tips gratis",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3001/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "connectionId",
+      "value": "1"
+    },
+    {
+      "key": "categoryId",
+      "value": "1"
+    },
+    {
+      "key": "batchId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Status bank",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/bank/status"
+      }
+    },
+    {
+      "name": "Rekening impor (bukan koneksi API)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/bank/connections",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"label\": \"Demo alias\",\n  \"account_last4\": \"1234\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Preview DATA SINTETIS",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/bank/imports/preview",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"connection_id\": 1,\n  \"category_id\": 1,\n  \"format\": \"json\",\n  \"is_synthetic\": true,\n  \"content\": \"[{\\\"date\\\":\\\"2026-11-01\\\",\\\"external_ref\\\":\\\"DEMO-IN-001\\\",\\\"direction\\\":\\\"credit\\\",\\\"amount\\\":\\\"5000000.00\\\",\\\"description\\\":\\\"DATA SINTETIS pemasukan\\\"},{\\\"date\\\":\\\"2026-11-02\\\",\\\"external_ref\\\":\\\"DEMO-OUT-001\\\",\\\"direction\\\":\\\"debit\\\",\\\"amount\\\":\\\"150000.00\\\",\\\"description\\\":\\\"DATA SINTETIS belanja\\\"}]\\n\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Tips belum lengkap",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/recommendations/free?period=2026-11"
+      }
+    },
+    {
+      "name": "Tips dengan deklarasi lengkap dan preferensi",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/recommendations/free?period=2026-11&income_confirmed=true&commitments_confirmed=true&reserve_target=1500000.00&goal_target=1000000.00&horizon_months=24&risk_profile=low"
+      }
+    },
+    {
+      "name": "Whitelist owner: harus 400",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/recommendations/free?user_id=2"
+      }
+    }
+  ]
+}

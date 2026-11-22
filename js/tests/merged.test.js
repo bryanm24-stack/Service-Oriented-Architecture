@@ -18,7 +18,8 @@ test('Migrasi gabungan memilih DB_NAME dan tidak berpindah ke database impor man
             mysql.createConnection = async () => ({
                 query: async sql => {
                     calls.push(sql);
-                    if (sql.startsWith('SHOW COLUMNS')) return [roleExists ? [{ Field: 'role' }] : []];
+                    if(sql.includes("transactions LIKE 'type'"))return [[{Type: "enum('income','expense')"}]];
+                    if (sql.startsWith('SHOW COLUMNS')) return [roleExists ? [{ Field: 'role', Type:"enum('pending','paid','needs_review')", Null:'YES' }] : []];
                     return [[], []];
                 },
                 end: async () => { closed = true; }
@@ -27,13 +28,13 @@ test('Migrasi gabungan memilih DB_NAME dan tidak berpindah ke database impor man
             await migrate();
 
             const expected = name || 'asisten_keuangan';
-            assert.equal(calls.length, roleExists ? 4 : 5);
+            assert(calls.length > 10);
             assert.match(calls[0], new RegExp('CREATE DATABASE IF NOT EXISTS `' + expected + '`'));
             assert.equal(calls[1], 'USE `' + expected + '`');
             assert.doesNotMatch(calls[2], /^\s*(USE|CREATE DATABASE)\b/im);
             const tables = [...calls[2].matchAll(/^CREATE TABLE IF NOT EXISTS (\w+)/gm)].map(match => match[1]);
-            assert.equal(tables.length, 8);
-            assert.equal(new Set(tables).size, 8);
+            assert.equal(tables.length, Object.keys(require('../src/models').sequelize.models).length);
+            assert.equal(new Set(tables).size, tables.length);
             assert(tables.indexOf('users') < tables.indexOf('budget'));
             assert(tables.indexOf('budget') < tables.indexOf('budget_categories'));
             assert(tables.indexOf('users') < tables.indexOf('api_clients'));

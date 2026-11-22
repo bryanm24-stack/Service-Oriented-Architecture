@@ -3,7 +3,7 @@
 @section('content')
     <div class="page-heading"><div><a class="back-link" href="{{ route('recurring.index') }}"><x-icon name="left" />Kembali</a><h1>{{ $recurring ? 'Edit' : 'Tambah' }} pengeluaran berulang</h1><p class="subtitle">Preview jadwal dari API sebelum menyimpan.</p></div></div>
     <div class="form-layout"><section class="panel form-panel">
-        <form method="post" action="{{ $recurring ? route('recurring.update', $recurring['id_recurring_cost']) : route('recurring.store') }}" data-mutation>@csrf @if($recurring) @method('PATCH') @endif
+        <form id="recurring-form" data-preview-url="{{ route('recurring.preview') }}" method="post" action="{{ $recurring ? route('recurring.update', $recurring['id_recurring_cost']) : route('recurring.store') }}" data-mutation>@csrf @if($recurring) @method('PATCH') @endif
             <div class="field"><label for="name">Nama tagihan</label><input id="name" name="name" required maxlength="180" value="{{ old('name', $recurring['name'] ?? '') }}" placeholder="Internet rumah"></div>
             <div class="field"><label for="amount">Nominal (Rp)</label><input id="amount" name="amount" required inputmode="decimal" value="{{ old('amount', $recurring['amount'] ?? '') }}" placeholder="150000"></div>
             <div class="field"><label for="category_id">Kategori</label><select id="category_id" name="category_id" required><option value="">Pilih kategori</option>@foreach($categories as $category)<option value="{{ $category['id'] }}" @selected((string) old('category_id', $recurring['category_id'] ?? '') === (string) $category['id'])>{{ $category['name'] }}</option>@endforeach</select></div>
@@ -16,16 +16,4 @@
         </form>
         <div id="preview-panel" class="panel recurring-preview" hidden><h2>Preview tagihan</h2><p class="field-help">Belum menjadi transaksi bank.</p><div id="preview-results"></div></div>
     </section><aside class="form-aside"><span class="aside-icon"><x-icon name="info" /></span><h2>Histori tetap aman.</h2><p>Mengubah nominal atau periode hanya memengaruhi template dan jadwal mendatang yang belum dikunci.</p><div class="aside-tip"><p>Tanggal 29/30/31 diklem ke hari terakhir bulan target, termasuk aturan tahun kabisat.</p></div></aside></div>
-    <script>
-        document.getElementById('preview-button').addEventListener('click', async () => {
-            const form = document.querySelector('form');
-            const panel = document.getElementById('preview-panel');
-            const result = document.getElementById('preview-results');
-            result.textContent = 'Memuat preview...'; panel.hidden = false;
-            const response = await fetch('{{ route('recurring.preview') }}', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'}, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
-            const body = await response.json();
-            if (!response.ok) { result.textContent = 'Preview belum tersedia. Periksa isian.'; return; }
-            result.innerHTML = body.data.map(row => `<div class="recurring-preview-row"><span>${row.due_date}</span><strong>Rp ${row.amount_snapshot}</strong></div>`).join('');
-        });
-    </script>
 @endsection

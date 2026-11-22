@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { spawnSync } = require('node:child_process');
-const result = spawnSync(process.execPath, ['--test', 'tests/cashflow.test.js', 'tests/tokens-mysql.test.js', 'tests/ai-wallet.test.js'], {
+const result = spawnSync(process.execPath, ['--test', 'tests/cashflow.test.js', 'tests/tokens-mysql.test.js', 'tests/ai-wallet.test.js', 'tests/bank-free-mysql.test.js'], {
   stdio: 'inherit',
   env: { ...process.env, RUN_MYSQL_TESTS: '1' },
 });

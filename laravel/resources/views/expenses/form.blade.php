@@ -19,8 +19,8 @@
                 @endif
                 <div class="field"><label for="type">Jenis transaksi</label><select id="type" name="type"
                         required>
-                        <option value="expense" @selected(old('type', $expense['type'] ?? 'expense') === 'expense')>Pengeluaran</option>
-                        <option value="income" @selected(old('type', $expense['type'] ?? 'expense') === 'income')>Pemasukan</option>
+                        <option value="expense" @selected(old('type', $expense['type'] ?? (request('type') === 'income' ? 'income' : 'expense')) === 'expense')>Pengeluaran</option>
+                        <option value="income" @selected(old('type', $expense['type'] ?? (request('type') === 'income' ? 'income' : 'expense')) === 'income')>Pemasukan</option>
                     </select>
                     @error('type')
                         <p class="field-error">{{ $message }}</p>

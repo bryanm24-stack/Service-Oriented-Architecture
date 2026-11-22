@@ -47,7 +47,7 @@ final class TokenController extends Controller
         $order = $api->createPurchase((int) $values['token_bundle_id'], $values['idempotency_key']);
 
         // Keep key after success: refresh/back/double-click returns the same order.
-        return to_route('token-purchases.show', $order['order_id'])->with('success', 'Order lokal dibuat. Pembayaran belum tersedia dan kuota belum bertambah.');
+        return to_route('token-purchases.show', $order['order_id'])->with('success', 'Order dibuat. Lanjutkan checkout; kuota bertambah setelah pembayaran diverifikasi.');
     }
 
     public function purchases(Request $request, TokenApi $api)

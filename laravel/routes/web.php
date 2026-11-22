@@ -22,6 +22,11 @@ Route::get('/register', [AuthController::class, 'registerForm'])->name('register
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 Route::middleware(EnsureApiAuthenticated::class)->group(function () {
     Route::redirect('/', '/app/dashboard');
+    Route::get('/app/bank', [\App\Http\Controllers\BankController::class,'index'])->name('bank.index');
+    Route::post('/app/bank/connections', [\App\Http\Controllers\BankController::class,'connection'])->name('bank.connection');
+    Route::post('/app/bank/preview', [\App\Http\Controllers\BankController::class,'preview'])->name('bank.preview');
+    Route::post('/app/bank/imports/{id}/confirm', [\App\Http\Controllers\BankController::class,'confirm'])->whereNumber('id')->name('bank.confirm');
+    Route::get('/app/tips', [\App\Http\Controllers\RecommendationController::class,'index'])->name('recommendations.index');
     Route::get('/app/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/app/transactions', [ExpenseController::class, 'index'])->name('expenses.index');
     Route::get('/app/transactions/create', [ExpenseController::class, 'create'])->name('expenses.create');

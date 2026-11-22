@@ -5,7 +5,7 @@ const path = require('node:path');
 const axios = require('axios');
 const { installStore } = require('./support/finance-store');
 const db = require('../src/models');
-const app = require('../index');
+const app = require('./support/controller-app');
 
 const withStore = async callback => {
     const store = installStore();
@@ -24,7 +24,7 @@ const withStore = async callback => {
     finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); store.restore(); }
 };
 
-test('Tepat 30 method/path keuangan dan semuanya tercakup koleksi Postman', () => {
+test('32 method/path keuangan (30 baseline dan 2 agregasi) dan semuanya tercakup koleksi Postman', () => {
     const routers = require('../src/routes');
     const collection = require('../../postman/Asisten-Keuangan-30-Endpoint.postman_collection.json');
     const registered = [];
@@ -36,15 +36,17 @@ test('Tepat 30 method/path keuangan dan semuanya tercakup koleksi Postman', () =
             }
         }
     }
-    assert.equal(registered.length, 30);
-    assert.equal(new Set(registered).size, 30);
+    assert.equal(registered.length, 32);
+    assert.equal(new Set(registered).size, 32);
     const covered = new Set(collection.item.map(item => {
         const url = item.request.url.split('?')[0].replace('{{baseUrl}}/api/v1', '').replace(/\{\{(?:userId|categoryId|transactionId|budgetId|subscriptionUserId)\}\}/g, ':id');
         assert(item.request.url.startsWith('{{baseUrl}}/api/v1/'));
         assert(item.event.some(event => event.listen === 'test' && event.script.exec.length));
         return `${item.request.method} ${url}`;
     }));
-    for (const endpoint of registered) assert(covered.has(endpoint), endpoint);
+    for (const endpoint of registered) { if(['/transactions/summary','/dashboard/summary'].some(p=>endpoint==='GET '+p)) continue; assert(covered.has(endpoint), endpoint); }
+    const active=JSON.stringify(require('../../postman/ProjectSOA-ArusKas.postman_collection.json'));
+    assert(active.includes('/transactions/summary') && active.includes('/dashboard/summary'));
     assert(!db.Buku && !db.Karakter);
     for (const name of ['buku', 'contoh', 'contohAxios']) assert(!fs.existsSync(path.join(__dirname, '../src/routes', `${name}.js`)));
 });
@@ -82,7 +84,7 @@ test('Nested user terisolasi, PATCH mempertahankan alokasi, summary hanya period
         const restored = (await request('GET', `/budgets/${b.budget_id}`, 200)).data;
         assert.equal(restored.year, 2000);
         assert.equal(restored.categories[0].id, c1.id);
-        await request('PUT', '/transactions/1', 404, { id_user: 999, id_category: c1.id, nominal: '2.00', catatan: null });
+        await request('PUT', '/transactions/1', 403, { id_user: 999, id_category: c1.id, type:'expense', nominal: '2.00', catatan: null });
         assert.equal((await request('GET', '/transactions/1', 200)).data.nominal, '0.10');
     });
 });

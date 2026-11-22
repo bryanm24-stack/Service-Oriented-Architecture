@@ -1,0 +1,3 @@
+date,external_ref,direction,amount,description
+2026-11-01,DEMO-IN-001,credit,5000000.00,DATA SINTETIS pemasukan
+2026-11-02,DEMO-OUT-001,debit,150000.00,DATA SINTETIS belanja

@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME = 'projectsoa-pwa-shell-v3-token-catalog';
+const CACHE_NAME = 'projectsoa-pwa-shell-v4-bank-tips';
 const STATIC_ASSETS = [
     '/offline.html',
     '/assets/app.v1.css',

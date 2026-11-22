@@ -170,46 +170,20 @@ const installStore = () => {
       throw failure;
     }
   });
+  replace(db.RecurringCost, 'count', async()=>0);
+  replace(db.Transaction, 'findAndCountAll', async options=>({rows:await db.Transaction.findAll(options),count:state.transactions.filter(x=>matches(x,options.where)).length}));
   replace(db.sequelize, 'query', async (sql, options) => {
-    const q = options.bind;
-    if (sql.includes('SUM(nominal)')) {
-      const totals = new Map();
-      for (const row of state.transactions) {
-        const date = new Date(row.createdAt);
-        if (
-          row.id_user === q.userId &&
-          date.getUTCFullYear() === q.year &&
-          date.getUTCMonth() + 1 === q.month
-        )
-          totals.set(row.id_category, (totals.get(row.id_category) || 0n) + toCents(row.nominal));
-      }
-      return [...totals].map(([id_category, total]) => ({ id_category, spent: fromCents(total) }));
+    const q=options.replacements||options.bind||{};
+    let rows=state.transactions.filter(x=>(q.id_user===undefined||x.id_user===q.id_user)&&(q.userId===undefined||x.id_user===q.userId)&&(q.id_category===undefined||x.id_category===q.id_category)&&(q.type===undefined||x.type===q.type)&&(q.search===undefined||(x.catatan||'').includes(q.search.slice(1,-1)))&&(q.start===undefined||new Date(x.createdAt)>=new Date(q.start.replace(' ','T')+'Z'))&&(q.end===undefined||new Date(x.createdAt)<new Date(q.end.replace(' ','T')+'Z')));
+    if(sql.includes('SUM(nominal)')){
+      const sums=new Map();for(const x of rows.filter(x=>x.type==='expense'))sums.set(x.id_category,(sums.get(x.id_category)||0n)+toCents(x.nominal));
+      return [...sums].map(([id_category,sum])=>({id_category,spent:fromCents(sum)}));
     }
-    return state.transactions
-      .filter(
-        (row) =>
-          (q.categoryId === undefined || row.id_category === q.categoryId) &&
-          (q.userId === undefined || row.id_user === q.userId) &&
-          (q.search === undefined || (row.catatan || '').includes(q.search.slice(1, -1))) &&
-          (q.minNominal === undefined || Number(row.nominal) >= Number(q.minNominal)) &&
-          (q.maxNominal === undefined || Number(row.nominal) <= Number(q.maxNominal)),
-      )
-      .sort(
-        (a, b) => (Number(a.nominal) - Number(b.nominal)) * (sql.includes('nominal DESC') ? -1 : 1),
-      )
-      .slice(q.offset, q.offset + q.limit)
-      .map((row) => {
-        const joined = relation('transactions', row, true);
-        return {
-          ...row,
-          category_id: joined.category?.id,
-          category_name: joined.category?.name,
-          category_icon: joined.category?.icon,
-          user_id: joined.user?.id,
-          user_name: joined.user?.name,
-          user_email: joined.user?.email,
-        };
-      });
+    if(sql.includes('COUNT(*)'))return [{total:rows.length}];
+    const key=sql.includes('ORDER BY t.nominal')?'nominal':sql.includes('ORDER BY t.id_transaction')?'id_transaction':'createdAt';
+    const desc=sql.includes('DESC')?-1:1;
+    rows.sort((a,b)=>((key==='nominal'?Number(a[key])-Number(b[key]):String(a[key]).localeCompare(String(b[key])))||a.id_transaction-b.id_transaction)*desc);
+    return rows.slice(q.offset||0,(q.offset||0)+(q.limit||100)).map(row=>{const j=relation('transactions',row,true);return {...row,category_id:j.category?.id,category_name:j.category?.name,category_icon:j.category?.icon,user_id:j.user?.id,user_name:j.user?.name,user_email:j.user?.email};});
   });
   return {
     state: () => state,

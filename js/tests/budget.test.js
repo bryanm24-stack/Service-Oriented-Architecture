@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Op } = require('sequelize');
-const app = require('../index');
+const app = require('./support/controller-app');
 const { Budget, BudgetCategory, User, Category, sequelize } = require('../src/models');
 
 test('Budget CRUD, validasi, konflik dan rollback dengan database simulasi', async () => {
@@ -31,7 +31,7 @@ test('Budget CRUD, validasi, konflik dan rollback dengan database simulasi', asy
         } : null;
     });
     replace(Budget, 'findAll', async options => [...budgets.values()].filter(r => options.where.user_id === undefined || r.user_id === options.where.user_id).map(joined));
-    replace(Budget, 'findOne', async ({where}) => [...budgets.values()].find(r => r.user_id === where.user_id && r.month === where.month && r.year === where.year && r.budget_id !== where.budget_id?.[Op.ne]) || null);
+    replace(Budget, 'findOne', async ({where,transaction}) => typeof where.budget_id === 'number' ? Budget.findByPk(where.budget_id,{transaction}) : [...budgets.values()].find(r => r.user_id === where.user_id && r.month === where.month && r.year === where.year && r.budget_id !== where.budget_id?.[Op.ne]) || null);
     replace(Budget, 'create', async (value, options) => {
         assert(options.transaction);
         if (forceUnique) { const e = new Error('duplicate'); e.name = 'SequelizeUniqueConstraintError'; throw e; }

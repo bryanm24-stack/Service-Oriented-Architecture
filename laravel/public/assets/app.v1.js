@@ -94,3 +94,16 @@
         });
     }
 })();
+
+(() => {
+ const method=document.getElementById('payment_method');
+ const fields=document.getElementById('installment-fields');
+ if(method&&fields){const sync=()=>{const enabled=method.value==='installment';fields.hidden=!enabled;for(const id of ['down_payment','tenor_value','tenor_type']){const el=document.getElementById(id);el.disabled=!enabled;if(id!=='tenor_type')el.required=enabled;}};method.addEventListener('change',sync);sync();}
+ const button=document.getElementById('preview-button'),form=document.getElementById('recurring-form');
+ if(button&&form)button.addEventListener('click',async()=>{
+  const panel=document.getElementById('preview-panel'),result=document.getElementById('preview-results');panel.hidden=false;result.textContent='Memuat preview...';
+  const values=Object.fromEntries(new FormData(form));delete values._method;delete values._token;
+  try{const response=await fetch(form.dataset.previewUrl,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':form.querySelector('[name="_token"]').value},body:JSON.stringify(values)});const body=await response.json();if(!response.ok)throw Error('Isian belum valid');result.textContent='';for(const row of body.data){const item=document.createElement('p');item.textContent=row.due_date+' · Rp '+row.amount_snapshot;result.append(item);}}
+  catch{result.textContent='Preview belum tersedia. Periksa isian dan koneksi.';}
+ });
+})();
