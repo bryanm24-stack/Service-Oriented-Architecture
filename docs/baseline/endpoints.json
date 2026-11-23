@@ -154,5 +154,13 @@
   {
     "method": "DELETE",
     "path": "/api/v1/budgets/:id"
+  },
+    {
+    "method": "GET",
+    "path": "/api/v1/reports/expenses"
+  },
+    {
+    "method": "GET",
+    "path": "/api/v1/reports/expenses.pdf"
   }
 ]
