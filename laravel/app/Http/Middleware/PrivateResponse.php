@@ -15,7 +15,15 @@ class PrivateResponse
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'same-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+
+        $formAction = "'self'";
+        if ($request->routeIs('token-purchases.checkout', 'token-purchases.checkout.start')) {
+            // Chrome checks the external redirect after the checkout form POST.
+            // Keep this allowlist aligned with TokenController::startCheckout().
+            $formAction .= ' https://app.sandbox.midtrans.com https://app.midtrans.com';
+        }
+
+        $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action {$formAction}");
 
         return $response;
     }
