@@ -14,12 +14,16 @@
 </section>
 <section class="panel"><span class="stat-icon"><x-icon name="shield" /></span><h2 class="catalog-section-title">Status pembayaran</h2>
     <p class="muted">
-        @if($purchase['status'] === 'pending') Pembayaran belum terverifikasi. Refresh setelah menyelesaikan checkout untuk membaca status dari server.
+        @if($purchase['status'] === 'pending') Status lokal belum terverifikasi. Setelah simulasi pembayaran selesai, gunakan Cek status pembayaran untuk meminta status resmi Midtrans.
         @elseif($purchase['status'] === 'paid') Pembayaran terverifikasi. Kuota sudah dikreditkan satu kali.
         @elseif($purchase['status'] === 'needs_review') Refund/chargeback diterima dan perlu ditinjau; saldo tidak didebit otomatis.
         @else Pembayaran tidak menghasilkan kredit kuota.
         @endif
     </p>
+    <form method="post" action="{{ route('token-purchases.sync', $purchase['order_id']) }}">
+        @csrf
+        <button class="button full" type="submit">Cek status pembayaran</button>
+    </form>
     <a class="button secondary full checkout-link" href="{{ route('token-purchases.checkout', $purchase['order_id']) }}">Status checkout <x-icon name="arrow" /></a>
 </section>
 </div>

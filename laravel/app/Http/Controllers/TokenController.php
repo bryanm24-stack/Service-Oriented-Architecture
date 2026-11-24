@@ -85,6 +85,14 @@ final class TokenController extends Controller
     public function startCheckout(string $orderId, TokenApi $api)
     {
         $result = $api->startCheckout($orderId);
+        if (($result['purchase']['status'] ?? null) === 'paid') {
+            return to_route('token-purchases.show', $orderId)
+                ->with('success', 'Pembayaran terverifikasi. Kuota sudah ditambahkan satu kali.');
+        }
+        if (($result['purchase']['status'] ?? 'pending') !== 'pending') {
+            return to_route('token-purchases.show', $orderId)
+                ->with('success', 'Status pembayaran sudah diperbarui dari Midtrans.');
+        }
         $url = $result['checkout']['redirect_url'] ?? null;
         $host = is_string($url) ? parse_url($url, PHP_URL_HOST) : null;
         if (! is_string($url) || ! in_array($host, ['app.sandbox.midtrans.com', 'app.midtrans.com'], true)) {
@@ -92,5 +100,19 @@ final class TokenController extends Controller
                 ->with('error', 'Checkout belum siap. Status order tetap menunggu verifikasi.');
         }
         return redirect()->away($url);
+    }
+
+    public function syncPayment(string $orderId, TokenApi $api)
+    {
+        $result = $api->syncPayment($orderId);
+        $status = $result['purchase']['status'] ?? 'pending';
+        $message = match (true) {
+            $status === 'paid' => 'Pembayaran terverifikasi. Kuota sudah dikreditkan satu kali.',
+            empty($result['provider_found']) => 'Status belum tersedia di Midtrans pada environment ini. Status lokal tetap; jangan membayar ulang bila sudah melakukan simulasi.',
+            $status === 'pending' => 'Midtrans masih mencatat transaksi menunggu pembayaran atau verifikasi. Cek lagi beberapa saat setelah simulasi selesai.',
+            default => 'Status order diperbarui dari Midtrans: '.$status.'.',
+        };
+
+        return to_route('token-purchases.show', $orderId)->with('success', $message);
     }
 }

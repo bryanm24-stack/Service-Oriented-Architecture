@@ -73,6 +73,11 @@ final class TokenApi
         return $this->request('POST', '/token-purchases/'.$orderId.'/checkout')['data'];
     }
 
+    public function syncPayment(string $orderId): array
+    {
+        return $this->request('POST', '/token-purchases/'.$orderId.'/sync')['data'];
+    }
+
     public function wallet(): array
     {
         return $this->request('GET', '/token-wallet')['data'];

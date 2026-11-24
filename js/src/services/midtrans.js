@@ -134,7 +134,7 @@ const providerStatusError = (status) => {
   }
 
   if ([401, 403].includes(Number(status))) {
-    return httpError(502, 'Autentikasi Midtrans ditolak; periksa Server Key dan environment');
+    return httpError(502, 'Autentikasi/izin Midtrans ditolak; periksa Server Key, environment, serta izin Core API Read dan Snap Checkout Write');
   }
 
   return null;
@@ -150,6 +150,55 @@ const mapMidtransError = (error) => {
 };
 
 const optionalText = (value) => (typeof value === 'string' && value.trim() ? value : null);
+
+// Snap orders also use the Core Status API. No MIDTRANS_ORDER_IDS mapping is
+// needed: callers take the order ID from the local purchase, never a client price.
+const getTransactionStatus = async ({ orderId, transactionId = null }) => {
+  if (!validIdentifier(orderId) || (transactionId && !validIdentifier(transactionId))) {
+    throw httpError(400, 'Identitas order Midtrans tidak valid');
+  }
+  const { baseUrl, serverKey } = getProviderConfig();
+  let response;
+  try {
+    response = await requestUpstream({
+      method: 'GET', url: `${baseUrl}/v2/${encodeURIComponent(transactionId || orderId)}/status`,
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`,
+        Accept: 'application/json', 'Content-Type': 'application/json',
+      },
+    }, mapMidtransError);
+  } catch (error) {
+    if (error.status === 404) return null;
+    throw error;
+  }
+  const data = response.data;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw httpError(502, 'Respons status Midtrans tidak valid');
+  }
+  if (Number(data.status_code) === 404) return null;
+  const failure = providerStatusError(data.status_code);
+  if (failure) throw failure;
+  const status = typeof data.transaction_status === 'string' ? data.transaction_status.toLowerCase() : '';
+  const fraud = data.fraud_status == null || data.fraud_status === '' ? null : String(data.fraud_status).toLowerCase();
+  // The documented Core API amount is IDR; some older responses omit currency.
+  const currency = data.currency === undefined ? 'IDR' : data.currency;
+  if (data.order_id !== orderId || !validIdentifier(data.transaction_id) ||
+      (transactionId && data.transaction_id !== transactionId) ||
+      !transactionStatuses.has(status) || !/^\d{3}$/.test(String(data.status_code)) ||
+      Number(data.status_code) >= 500 || typeof data.gross_amount !== 'string' ||
+      !/^\d{1,13}(\.\d{1,2})?$/.test(data.gross_amount) || currency !== 'IDR' ||
+      (fraud !== null && !['accept', 'challenge', 'deny'].includes(fraud))) {
+    throw httpError(502, 'Identitas, nominal, atau status respons Midtrans tidak cocok');
+  }
+  const selected = {
+    order_id: data.order_id, status_code: String(data.status_code),
+    gross_amount: data.gross_amount, currency,
+    transaction_id: data.transaction_id, transaction_status: status,
+    fraud_status: fraud, payment_type: optionalText(data.payment_type),
+    transaction_time: optionalText(data.transaction_time),
+  };
+  return { ...selected, selected_response: selected };
+};
 
 const getUserPaymentStatus = async (userId) => {
   const { baseUrl, serverKey, order } = getMidtransConfig(userId);
@@ -245,7 +294,9 @@ const createSnapTransaction = async ({ purchase, user }) => {
 
 const verifyNotificationSignature = (payload, env = process.env) => {
   const { serverKey } = getProviderConfig(env);
-  const source = `${payload.order_id}${payload.status_code}${payload.gross_amount}${serverKey}`;
+  // Legacy helper only: the notification controller below verifies by Status API.
+  const signatureSecret = env.MIDTRANS_SIGNATURE_SECRET_KEY?.trim() || serverKey;
+  const source = `${payload.order_id}${payload.status_code}${payload.gross_amount}${signatureSecret}`;
   const expected = crypto.createHash('sha512').update(source).digest('hex');
   const received = typeof payload.signature_key === 'string' ? payload.signature_key : '';
   return received.length === expected.length &&
@@ -254,5 +305,5 @@ const verifyNotificationSignature = (payload, env = process.env) => {
 
 module.exports = {
   getUserPaymentStatus, getMidtransConfig, getProviderConfig,
-  createSnapTransaction, verifyNotificationSignature,
+  createSnapTransaction, verifyNotificationSignature, getTransactionStatus,
 };

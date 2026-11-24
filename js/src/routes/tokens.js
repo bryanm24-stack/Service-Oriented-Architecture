@@ -23,6 +23,8 @@ router.route('/token-wallet').get(wrap(purchases.wallet)).all(methodNotAllowed('
 router.route('/token-ledger').get(wrap(purchases.ledger)).all(methodNotAllowed('GET'));
 router.route('/token-purchases/:orderId/checkout').get(wrap(purchases.inspectCheckout))
   .post(wrap(purchases.startCheckout)).all(methodNotAllowed('GET', 'POST'));
+router.route('/token-purchases/:orderId/sync').post(wrap(purchases.syncPayment))
+  .all(methodNotAllowed('POST'));
 router.route('/token-purchases/:orderId').get(wrap(purchases.show)).all(methodNotAllowed('GET'));
 
 module.exports = router;

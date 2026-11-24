@@ -4,7 +4,7 @@ const schema = require('../utils/validation/tokenSchemas');
 const service = require('../services/tokenPurchases');
 const walletService = require('../services/tokenWallet');
 const checkout = require('../services/tokenCheckout');
-const { verifyNotificationSignature } = require('../services/midtrans');
+const Joi = require('joi');
 
 const create = async (req, res) => {
   parse(schema.empty, req.query);
@@ -47,33 +47,21 @@ const startCheckout = async (req, res) => {
   res.json({ data: result });
 };
 
+const syncPayment = async (req, res) => {
+  parse(schema.empty, req.body || {});
+  res.json({ data: await checkout.syncOwnedPayment(input(req)) });
+};
+
 const notification = async (req, res) => {
-  const payload = parse(schema.midtransNotification, req.body);
-  if (!verifyNotificationSignature(payload)) {
-    return res.status(401).json({ msg: 'Signature Midtrans tidak valid' });
-  }
-  const purchase = await TokenPurchase.findOne({ where: { order_id: payload.order_id } });
-  if (!purchase) return res.status(404).json({ msg: 'Order tidak ditemukan' });
-  const provider = {
-    currency: payload.currency,
-    gross_amount: payload.gross_amount,
-    transaction_id: payload.transaction_id,
-    transaction_status: payload.transaction_status,
-    fraud_status: payload.fraud_status,
-    selected_response: {
-      order_id: payload.order_id,
-      status_code: payload.status_code,
-      gross_amount: payload.gross_amount,
-      currency: payload.currency,
-      transaction_id: payload.transaction_id || null,
-      transaction_status: payload.transaction_status,
-      fraud_status: payload.fraud_status || null,
-      payment_type: payload.payment_type || null,
-      transaction_time: payload.transaction_time || null,
-    },
-  };
-  const result = await checkout.grantPaidPurchase({ orderId: payload.order_id, provider });
+  const payload = parse(Joi.object({
+    order_id: Joi.string().trim().min(1).max(255).required(),
+    transaction_id: Joi.string().trim().min(1).max(255),
+  }).unknown(true), req.body);
+  // Never trust status/amount/signature sent by the caller. Confirm directly
+  // with Midtrans; this also supports separate Signature Secret Key accounts.
+  const result = await checkout.reconcileByOrder({ orderId: payload.order_id, transactionIdHint: payload.transaction_id });
+  if (!result.provider_found) return res.status(503).json({ msg: 'Status order belum tersedia di Midtrans; coba kembali.' });
   return res.json({ data: { accepted: true, granted: result.granted } });
 };
 
-module.exports = { create, list, wallet, ledger, show, inspectCheckout, startCheckout, notification };
+module.exports = { create, list, wallet, ledger, show, inspectCheckout, startCheckout, syncPayment, notification };

@@ -64,6 +64,7 @@ Route::middleware(EnsureApiAuthenticated::class)->group(function () {
     Route::get('/app/token-purchases/{orderId}', [TokenController::class, 'show'])->where('orderId', 'SOA-[0-9a-f-]{36}')->name('token-purchases.show');
     Route::get('/app/token-purchases/{orderId}/checkout', [TokenController::class, 'checkout'])->where('orderId', 'SOA-[0-9a-f-]{36}')->name('token-purchases.checkout');
     Route::post('/app/token-purchases/{orderId}/checkout', [TokenController::class, 'startCheckout'])->where('orderId', 'SOA-[0-9a-f-]{36}')->name('token-purchases.checkout.start');
+    Route::post('/app/token-purchases/{orderId}/sync', [TokenController::class, 'syncPayment'])->where('orderId', 'SOA-[0-9a-f-]{36}')->name('token-purchases.sync');
     Route::middleware(EnsureAdministrator::class)->prefix('app/admin')->name('admin.')->where(['id' => '[0-9]+'])->group(function () {
         Route::resource('token-bundles', AdminTokenBundleController::class)->except('show')->parameters(['token-bundles' => 'id'])->names('bundles');
         Route::resource('categories', AdminCategoryController::class)->except('show')->parameters(['categories' => 'id']);
