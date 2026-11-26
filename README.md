@@ -26,6 +26,14 @@ Katalog token, order pending dengan snapshot, idempotency key, halaman admin pak
 
 Upgrade: masuk ke folder `js/`, jalankan `npm ci`, `npm run db:migrate`, lalu masuk ke folder `laravel/` dan jalankan `composer install` serta `php artisan optimize:clear`. Untuk contoh data pengembangan saja, jalankan `npm run db:seed:tokens` dan `npm run db:seed:wishes` dari folder `js/`. Seed wishlist membuat 12 wish cash/cicilan beserta jadwal cicilan untuk user pertama; gunakan `$env:SEED_USER_EMAIL='email-anda'; npm run db:seed:wishes` di PowerShell untuk memilih user tertentu. Seed tidak otomatis dijalankan oleh migrasi dan aman diulang tanpa menggandakan data DEMO.
 
+Untuk membuat akun admin demo beserta data dummy, jalankan dari folder utama:
+
+```powershell
+node seed-dummy-soa.cjs --admin
+```
+
+Akunnya adalah `admin.soa@example.com` dengan password `AdminSOA2026!` (hanya saat akun baru dibuat). Akun lama tidak diganti passwordnya. Perintah `--admin` hanya menetapkan role `admin` pada akun admin dummy yang sudah ada; untuk akun lain gunakan `npm run user:admin -- email-akun`.
+
 Pengguna: `/app/token-bundles`, `/app/token-purchases`. Admin: `/app/admin/token-bundles`, `/app/admin/categories`. Daftarkan akun biasa dahulu, lalu jalankan `npm run user:admin -- email-admin@example.com` dari terminal backend untuk menetapkan admin yang dipercaya. Role dibaca ulang dari database pada setiap permintaan API; registrasi/form tidak menerima role.
 
 `resources/views/components/data-table.blade.php`, `form-field.blade.php`, dan `status-badge.blade.php` menjadi komponen bersama katalog. CSS/JS tetap lokal, PWA hanya menyimpan aset statis. `composer.lock` telah diselaraskan dengan platform PHP 8.3 sesuai persyaratan proyek.

@@ -15,6 +15,7 @@
     "evidence:budget": "node scripts/bukti-budget-join.js",
     "db:seed:tokens": "node scripts/seed-token-bundles.js",
     "db:seed:wishes": "node scripts/seed-wishes.js",
+    "db:seed:dummy": "node ../seed-dummy-soa.cjs",
     "test:tokens": "node --test tests/tokens.test.js tests/tokens-mysql.test.js",
     "test:ai-wallet": "node --test tests/ai-wallet.test.js"
   },

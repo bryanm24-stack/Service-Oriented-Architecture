@@ -14,7 +14,8 @@
  * Bantuan:        node seed-dummy-soa.cjs --help
  *
  * Bawaan: buat akun user demo.soa@example.com, password DemoSOA2026!
- * Password akun yang sudah ada tidak pernah diganti. Tidak membuat admin.
+ * Admin: buat/reuse admin.soa@example.com dengan --admin, password AdminSOA2026!
+ * Password akun yang sudah ada tidak pernah diganti.
  *
  * Isi untuk database kosong yang sudah dimigrasi:
  * - 56 transaksi income/expense, tersebar di 3 bulan.
@@ -25,8 +26,9 @@
  * - Wallet baru bersaldo 0; tidak menambah saldo wallet yang sudah ada.
  *
  * Tidak memanggil API Midtrans/AI/bank, tidak membuat pembayaran paid,
- * tidak mengisi riwayat AI, tidak mengubah tier/role, tidak menulis .env,
+ * tidak mengisi riwayat AI, tidak menulis .env,
  * tidak UPDATE/DELETE/TRUNCATE/ALTER tabel atau menimpa data sebelumnya.
+ * Pemakaian --admin dapat menetapkan role admin pada akun admin dummy.
  * Data yang sudah tersedia dilewati. Seluruh INSERT berada dalam transaksi.
  * Jalankan ulang untuk periode yang sama tanpa menggandakan data yang utuh.
  * Tanggal transaksi disimpan UTC (pukul 12.00 WIB), mengikuti backend proyek.
@@ -40,6 +42,9 @@ const { randomBytes, scryptSync, createHash } = require('node:crypto');
 const DEMO_EMAIL = 'demo.soa@example.com';
 const DEMO_PASSWORD = 'DemoSOA2026!';
 const DEMO_NAME = 'Pengguna DEMO SOA';
+const ADMIN_EMAIL = 'admin.soa@example.com';
+const ADMIN_PASSWORD = 'AdminSOA2026!';
+const ADMIN_NAME = 'Administrator DEMO SOA';
 const TAG = 'DEMO-SOA-v1';
 
 function optionsFrom(args) {
@@ -47,11 +52,15 @@ function optionsFrom(args) {
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
     if (flag === '--help' || flag === '-h') options.help = true;
+    else if (flag === '--admin') options.admin = true;
     else if (['--email', '--period', '--project'].includes(flag)) {
       const value = args[++index];
       if (!value || value.startsWith('--')) throw new Error(`Nilai ${flag} belum diisi.`);
       options[flag.slice(2)] = value;
     } else throw new Error(`Argumen tidak dikenal: ${flag}. Gunakan --help.`);
+  }
+  if (options.admin && options.email) {
+    throw new Error('--admin dan --email tidak boleh dipakai bersamaan.');
   }
   if (options.email) {
     options.email = options.email.trim().toLowerCase();
@@ -153,21 +162,28 @@ async function seed(connection, options, period) {
     return { row: { ...values, [idField]: result.insertId }, added: true };
   };
 
-  const email = options.email || DEMO_EMAIL;
+  const email = options.admin ? ADMIN_EMAIL : (options.email || DEMO_EMAIL);
   const [users] = await connection.execute('SELECT id, name, role, deletedAt FROM users WHERE email = ? LIMIT 1 FOR UPDATE', [email]);
   let userId;
   let createdUser = false;
+  let roleUpdated = false;
   if (users.length) {
     if (users[0].deletedAt) throw new Error('Akun tujuan sudah diarsipkan. Pilih akun aktif dengan --email.');
-    if (!options.email && (users[0].name !== DEMO_NAME || users[0].role !== 'user')) {
+    if (options.admin && users[0].role !== 'admin') {
+      await connection.execute('UPDATE users SET role = ? WHERE id = ?', ['admin', users[0].id]);
+      roleUpdated = true;
+    } else if (!options.email && !options.admin && (users[0].name !== DEMO_NAME || users[0].role !== 'user')) {
       throw new Error('Alamat demo sudah digunakan akun lain. Gunakan --email untuk memilih akun tujuan secara eksplisit.');
     }
     userId = users[0].id;
   } else {
     if (options.email) throw new Error('Akun --email belum terdaftar. Daftarkan dahulu, atau jalankan tanpa --email untuk membuat akun demo.');
     const salt = randomBytes(16).toString('hex');
-    const hash = `scrypt$${salt}$${scryptSync(DEMO_PASSWORD, salt, 64).toString('hex')}`;
-    const [result] = await connection.execute('INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)', [DEMO_NAME, email, hash, 'user']);
+    const password = options.admin ? ADMIN_PASSWORD : DEMO_PASSWORD;
+    const name = options.admin ? ADMIN_NAME : DEMO_NAME;
+    const role = options.admin ? 'admin' : 'user';
+    const hash = `scrypt$${salt}$${scryptSync(password, salt, 64).toString('hex')}`;
+    const [result] = await connection.execute('INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)', [name, email, hash, role]);
     userId = result.insertId;
     counts.users = 1;
     createdUser = true;
@@ -294,7 +310,7 @@ async function seed(connection, options, period) {
   await ensure('token_wallets', 'user_id', { user_id: userId }, {
     user_id: userId, balance: 0, available_tokens: 0, reserved_tokens: 0,
   });
-  return { email, userId, createdUser, counts };
+  return { email, userId, createdUser, roleUpdated, counts };
 }
 
 async function main() {
@@ -304,10 +320,12 @@ async function main() {
       'DATA DUMMY SOA (ZIP 5) - tidak mengubah kode atau skema proyek.',
       'Simpan di folder utama, sejajar js/ dan laravel/. MySQL dan migrasi harus siap.',
       'node seed-dummy-soa.cjs                  Buat/reuse akun demo khusus.',
+      'node seed-dummy-soa.cjs --admin          Buat/reuse akun administrator demo.',
       'node seed-dummy-soa.cjs --email "email"  Isi akun aktif yang sudah terdaftar.',
       'node seed-dummy-soa.cjs --period 2026-11  Pilih bulan akhir; bawaan bulan ini WIB.',
       'node seed-dummy-soa.cjs --project "path"  Tentukan folder utama proyek.',
       'Bawaan login: demo.soa@example.com / DemoSOA2026! (akun baru saja).',
+      'Admin login: admin.soa@example.com / AdminSOA2026! (akun baru dengan --admin).',
       '56 transaksi, 3 anggaran, 6 wish, 28 cicilan, 4 biaya rutin, 18 jadwal, 3 paket/order.',
       'Semua order belum paid; tidak memberi kuota token atau memanggil API eksternal.',
       'Periode sama + data utuh: pengulangan dilewati; tidak mereset data lama.',
@@ -352,7 +370,10 @@ async function main() {
     console.log(`Periode transaksi: ${calendar(period).month(-2)} sampai ${period}.`);
     console.log('Baris baru yang ditambahkan:');
     for (const table of Object.keys(REQUIRED)) console.log(`  ${table}: ${result.counts[table] || 0}`);
-    if (result.createdUser) console.log(`\nLogin demo baru: ${result.email}\nPassword demo: ${DEMO_PASSWORD}`);
+    if (result.createdUser && options.admin) console.log(`\nLogin admin demo baru: ${result.email}\nPassword admin demo: ${ADMIN_PASSWORD}`);
+    else if (result.createdUser) console.log(`\nLogin demo baru: ${result.email}\nPassword demo: ${DEMO_PASSWORD}`);
+    else if (options.admin && result.roleUpdated) console.log('\nAkun admin dummy dipromosikan menjadi role admin; password lama tetap dipakai.');
+    else if (options.admin) console.log('\nAkun admin dummy reuse sebagai role admin; gunakan password yang berlaku.');
     else console.log('\nGunakan password akun yang berlaku; password/role tidak diubah.');
     console.log('Refresh dashboard setelah login sebagai akun di atas.');
     console.log('Order hanya contoh lokal, belum dibayar di Midtrans; saldo token lama tidak diubah.');
